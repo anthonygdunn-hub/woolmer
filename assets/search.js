@@ -3,7 +3,7 @@
   var f = document.getElementById('s-form'), q = document.getElementById('s-q'), out = document.getElementById('s-results'), count = document.getElementById('s-count');
   if (!f) return;
   var data = [], WB = window.WB;
-  var syn = { chippy: 'fish chips', chinese: 'chinese wok china', indian: 'indian curry spice', pizza: 'pizza', pub: 'pub bar inn arms', coffee: 'coffee cafe', cafe: 'cafe coffee', supermarket: 'supermarket tesco lidl', kebab: 'kebab bbq' };
+  var syn = { chippy: 'fish chips', chinese: 'chinese wok china', indian: 'indian curry spice', pizza: 'pizza', pub: 'pub bar inn arms', coffee: 'coffee cafe', cafe: 'cafe coffee', supermarket: 'supermarket tesco lidl', kebab: 'kebab bbq', hairdresser: 'hair beauty', barber: 'hair beauty', hair: 'hair beauty', nails: 'nails beauty', doctor: 'surgery health', gp: 'surgery health', dentist: 'dentist dental', vet: 'veterinary vet', garage: 'motoring auto', mot: 'motoring auto', petrol: 'fuel shell esso jet', gym: 'fitness sport', solicitor: 'solicitors services' };
   var norm = function (s) { return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9 ]+/g, ' '); };
   function run() {
     var term = norm(q.value).trim();

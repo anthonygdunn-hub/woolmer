@@ -52,6 +52,12 @@ const CATS = [
   { name: 'Food & catering', blurb: 'Caterers, street food and event food', icon: 'chef' },
   { name: 'Local producers', blurb: 'Wine, beer and food made here', icon: 'leaf' },
   { name: 'Places to stay', blurb: 'B&Bs and hotels', icon: 'bed' },
+  { name: 'Hair & beauty', blurb: 'Hairdressers, barbers, nails, beauty and tattoos', icon: 'scissors' },
+  { name: 'Health & care', blurb: 'GP surgeries, dentists, pharmacies and vets', icon: 'health' },
+  { name: 'Motoring', blurb: 'Garages, MOTs, petrol stations and bikes', icon: 'car' },
+  { name: 'Sport & fitness', blurb: 'Gyms, the leisure centre and golf', icon: 'run' },
+  { name: 'Services', blurb: 'Solicitors, estate agents, trades and advice', icon: 'tool' },
+  { name: 'Community', blurb: 'Village halls, the library and post offices', icon: 'home' },
 ].map(c => ({ ...c, slug: slugify(c.name) }));
 const catBySlug = Object.fromEntries(CATS.map(c => [c.name, c]));
 const AREAS = ['Bordon', 'Whitehill', 'Lindford', 'Headley', 'Headley Down', 'Kingsley', 'Oakhanger', 'Standford', 'Frith End', 'Blackmoor'];
@@ -65,6 +71,12 @@ const ICONS = {
   chef: '<path d="M6 10a3 3 0 1 1 2-5 3 3 0 0 1 4 0 3 3 0 1 1 2 5v6H6z"/>',
   leaf: '<path d="M4 16C4 8 9 4 16 4c0 7-4 12-12 12zM4 16l7-7"/>',
   bed: '<path d="M3 15V6M3 11h14v4M17 15v-3a2 2 0 0 0-2-2H9v1"/>',
+  scissors: '<circle cx="6" cy="6" r="2.5"/><circle cx="6" cy="14" r="2.5"/><path d="M8 7.5l9 7M8 12.5l9-7"/>',
+  health: '<path d="M10 16.5s-6-3.6-6-8.2A3.3 3.3 0 0 1 10 6a3.3 3.3 0 0 1 6 2.3c0 4.6-6 8.2-6 8.2z"/>',
+  car: '<path d="M3 13v-2l2-5h10l2 5v2zM3 13v2h2.5v-2M14.5 13v2H17v-2M6 10.5h.01M14 10.5h.01"/>',
+  run: '<path d="M4 8v4M16 8v4M6 6v8M14 6v8M6 10h8"/>',
+  tool: '<path d="M12.5 3.5a3.5 3.5 0 0 0-3.3 4.6L3.5 13.8 6.2 16.5l5.7-5.7a3.5 3.5 0 0 0 4.6-3.3l-2 2-2.2-.5-.5-2.2z"/>',
+  home: '<path d="M3 9l7-5 7 5M5 8v8h10V8M8.5 16v-4h3v4"/>',
   pin: '<path d="M10 17s5-5 5-9a5 5 0 0 0-10 0c0 4 5 9 5 9z"/><circle cx="10" cy="8" r="1.8"/>',
 };
 const icon = (k, c = '#55C2C3', s = 20) => `<svg width="${s}" height="${s}" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="${c}" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${ICONS[k] || ICONS.pin}</svg>`;
@@ -140,7 +152,7 @@ ${body}
       <div><strong>Businesses</strong><a href="/business/">Claim your listing</a><a href="/business/#featured">Get featured</a><a href="/account/">Owner sign in</a></div>
       <div><strong>woolmer</strong><a href="/guidelines/">Review guidelines</a><a href="/terms/">Terms</a><a href="/privacy/">Privacy</a><a href="mailto:info@woolmer.info">info@woolmer.info</a></div>
     </div>
-    <p class="small">Food hygiene ratings and some business details come from the Food Standards Agency and contain public sector information licensed under the <a href="https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/">Open Government Licence v3.0</a>. Featured listings are paid placements and are always labelled. © ${new Date().getFullYear()} woolmer</p>
+    <p class="small">Food hygiene ratings and some business details come from the Food Standards Agency and contain public sector information licensed under the <a href="https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/">Open Government Licence v3.0</a>. Some other listings use data © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>. Featured listings are paid placements and are always labelled. © ${new Date().getFullYear()} woolmer</p>
   </div>
 </footer>
 <script>window.WB={url:${JSON.stringify(SB_URL)},key:${JSON.stringify(SB_KEY)}};</script>
@@ -287,7 +299,7 @@ ${groups.map(([c, l]) => `<section class="sec" style="padding-bottom:0"><div cla
     const dirUrl = p.lat ? `https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lng}` : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.name + ' ' + addr)}`;
     files[`p/${p.slug}/index.html`] = page({
       title: `${p.name}, ${p.area || 'Bordon'} — ${c ? c.name : p.category} — woolmer`,
-      desc: p.description ? p.description.slice(0, 155) : `${p.name} in ${p.area || 'Bordon'}${p.postcode ? ' (' + p.postcode + ')' : ''}: food hygiene rating ${/^[0-5]$/.test(p.hygiene_rating || '') ? p.hygiene_rating + ' out of 5' : 'pending'}, address, opening hours and local reviews.`,
+      desc: p.description ? p.description.slice(0, 155) : (p.fhrs_id ? `${p.name} in ${p.area || 'Bordon'}${p.postcode ? ' (' + p.postcode + ')' : ''}: food hygiene rating ${/^[0-5]$/.test(p.hygiene_rating || '') ? p.hygiene_rating + ' out of 5' : 'pending'}, address, opening hours and local reviews.` : `${p.name}, ${p.category.toLowerCase()} in ${p.area || 'Bordon'}${p.postcode ? ' (' + p.postcode + ')' : ''}: address, phone, opening hours and local reviews.`),
       path: `/p/${p.slug}/`,
       jsonld: ld,
       head: p.lat ? '<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">' : '',
