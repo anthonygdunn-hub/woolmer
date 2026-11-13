@@ -30,12 +30,14 @@ async function sb(pathq) {
 async function load() {
   if (FIXTURE) return JSON.parse(fs.readFileSync(path.join(ROOT, 'data/fixture.json'), 'utf8'));
   const cols = 'id,slug,name,category,address,postcode,area,hygiene_rating,rated_on,lat,lng,fhrs_id,claimed,featured_until,phone,website,email,description,hours,menu,photos,tags';
-  const [places, stats, settings] = await Promise.all([
+  const since = new Date(Date.now() - 36e5 * 24).toISOString();
+  const [places, stats, settings, events] = await Promise.all([
     sb(`wb_places?select=${cols}&listable=eq.true&order=name`),
     sb('wb_place_stats?select=id,reviews,rating'),
     sb('wb_settings?select=key,value'),
+    sb(`wb_events?select=id,title,place_id,venue,starts_at,ends_at,details,price,url,kind&published=eq.true&starts_at=gte.${since}&order=starts_at&limit=300`).catch(() => []),
   ]);
-  return { places, stats, settings: Object.fromEntries(settings.map(s => [s.key, s.value])) };
+  return { places, stats, settings: Object.fromEntries(settings.map(s => [s.key, s.value])), events };
 }
 
 // ------------------------------------------------------------------ helpers
@@ -43,6 +45,21 @@ const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').re
 const slugify = s => String(s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/&/g, 'and').replace(/['’]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 const today = new Date().toISOString().slice(0, 10);
 const isFeatured = p => p.featured_until && p.featured_until >= today;
+
+// ------------------------------------------------------------------ events (times shown in UK time)
+const TZ = 'Europe/London';
+const fmt = (d, o) => new Intl.DateTimeFormat('en-GB', { timeZone: TZ, ...o }).format(new Date(d));
+const ukDay = d => fmt(d, { year: 'numeric', month: '2-digit', day: '2-digit' }).split('/').reverse().join('-');
+const evTime = e => fmt(e.starts_at, { hour: 'numeric', minute: '2-digit', hour12: true }).replace(':00', '').replace(' ', '') + (e.ends_at ? '–' + fmt(e.ends_at, { hour: 'numeric', minute: '2-digit', hour12: true }).replace(':00', '').replace(' ', '') : '');
+const evEnd = e => new Date(e.ends_at || new Date(e.starts_at).getTime() + 3 * 36e5);
+function evCard(e, bySlug) {
+  const pl = e.place_id && bySlug[e.place_id];
+  const venue = pl ? `<a href="/p/${pl.slug}/">${esc(pl.name)}</a>` : esc(e.venue || '');
+  return `<article class="ev" data-start="${esc(e.starts_at)}" data-end="${esc(evEnd(e).toISOString())}" data-day="${ukDay(e.starts_at)}">
+  <div class="ev-date"><span>${fmt(e.starts_at, { weekday: 'short' })}</span><b>${fmt(e.starts_at, { day: 'numeric' })}</b><span>${fmt(e.starts_at, { month: 'short' })}</span></div>
+  <div class="ev-body"><p class="ev-when"><span class="ev-flag" hidden></span>${evTime(e)}${e.kind ? ` · ${esc(e.kind)}` : ''}</p><h3>${e.url ? `<a href="${esc(e.url)}" rel="nofollow noopener" target="_blank">${esc(e.title)}</a>` : esc(e.title)}</h3>${venue ? `<p class="ev-venue">${venue}</p>` : ''}${e.details ? `<p class="ev-det">${esc(e.details)}</p>` : ''}${e.price ? `<p class="ev-price">${esc(e.price)}</p>` : ''}</div>
+</article>`;
+}
 
 const CATS = [
   { name: 'Takeaways', blurb: 'Chippies, pizza, Chinese, Indian, kebabs and more', icon: 'bag' },
@@ -109,7 +126,7 @@ const TAB_ICONS = {
   heart: ic('<path d="M12 20s-7.5-4.6-7.5-10A4.3 4.3 0 0 1 12 7.3 4.3 4.3 0 0 1 19.5 10c0 5.4-7.5 10-7.5 10z"/>'),
   user: ic('<circle cx="12" cy="8.5" r="3.5"/><path d="M5 20c1.2-3.6 4-5.5 7-5.5s5.8 1.9 7 5.5"/>'),
 };
-const NAV = [['Takeaways', '/takeaways/'], ['Pubs & bars', '/pubs-and-bars/'], ['Cafés', '/cafes-and-restaurants/'], ['Shops', '/shops/'], ['Ask the town', '/ask/'], ['For businesses', '/business/']];
+const NAV = [['Takeaways', '/takeaways/'], ['Pubs & bars', '/pubs-and-bars/'], ['Cafés', '/cafes-and-restaurants/'], ['Shops', '/shops/'], ["What's on", '/whats-on/'], ['Ask the town', '/ask/'], ['For businesses', '/business/']];
 function page({ title, desc, path: p, body, head = '', scripts = '', noindex = false, jsonld = null }) {
   const url = SITE + p;
   return `<!doctype html>
@@ -155,6 +172,7 @@ ${jsonld ? `<script type="application/ld+json">${JSON.stringify(jsonld).replace(
     </div>
   </div>
 </header>
+<div class="evstrip" id="evstrip" hidden></div>
 <main id="main">
 ${body}
 </main>
@@ -165,7 +183,7 @@ ${body}
       <p style="margin:12px 0 0">An independent guide to Whitehill &amp; Bordon, built by people who live here. Named after the <a href="/#why-woolmer">Royal Forest of Woolmer</a>.</p>
     </div>
     <div class="cols">
-      <div><strong>Explore</strong>${CATS.slice(0, 5).map(c => `<a href="/${c.slug}/">${esc(c.name)}</a>`).join('')}<a href="/search/">Search</a></div>
+      <div><strong>Explore</strong>${CATS.slice(0, 5).map(c => `<a href="/${c.slug}/">${esc(c.name)}</a>`).join('')}<a href="/whats-on/">What's on</a><a href="/search/">Search</a></div>
       <div><strong>Businesses</strong><a href="/business/">Claim your listing</a><a href="/business/#featured">Get featured</a><a href="/account/">Owner sign in</a></div>
       <div><strong>woolmer</strong><a href="/guidelines/">Review guidelines</a><a href="/terms/">Terms</a><a href="/privacy/">Privacy</a><a href="mailto:info@woolmer.info">info@woolmer.info</a></div>
     </div>
@@ -177,6 +195,7 @@ ${body}
 <nav class="tabbar" aria-label="App">${TABS.map(([t, h, ic]) => `<a href="${h}"${(h === '/' ? p === '/' : p.startsWith(h)) ? ' aria-current="page"' : ''}>${TAB_ICONS[ic]}<span>${t}</span></a>`).join('')}</nav>
 <script src="/assets/site.js" defer></script>
 <script src="/assets/app.js" defer></script>
+<script src="/assets/events.js" defer></script>
 ${scripts}
 </body>
 </html>`;
@@ -227,7 +246,9 @@ function build(data) {
   const settings = data.settings || {};
   REV = settings.reviews_enabled === true;
   const files = {};
-  const sitemap = ['/', '/search/', '/ask/', '/business/', '/guidelines/', '/terms/', '/privacy/'];
+  const byId = Object.fromEntries(places.map(p => [p.id, p]));
+  const upcoming = (data.events || []).filter(e => evEnd(e) > new Date()).sort((a, b) => a.starts_at < b.starts_at ? -1 : 1);
+  const sitemap = ['/', '/whats-on/', '/search/', '/ask/', '/business/', '/guidelines/', '/terms/', '/privacy/'];
 
   // home
   const counts = Object.fromEntries(CATS.map(c => [c.name, places.filter(p => p.category === c.name).length]));
@@ -248,6 +269,10 @@ function build(data) {
 <section class="sec sec-band"><div class="wrap">
   <div class="sec-head"><h2>What are you after?</h2><a href="/search/">Search everything</a></div>
   <div class="cats">${CATS.filter(c => counts[c.name]).map((c, i) => `<a class="cat" style="--i:${i}" href="/${c.slug}/"><span class="ico">${icon(c.icon)}</span><span><b>${esc(c.name)}</b><span>${counts[c.name]} place${counts[c.name] > 1 ? 's' : ''}</span></span></a>`).join('')}</div>
+</div></section>
+<section class="sec" id="wo-home"${upcoming.length ? '' : ' hidden'}><div class="wrap">
+  <div class="sec-head"><div><p class="eyebrow" style="color:var(--teal-d)">Coming up</p><h2>What's on</h2></div><a href="/whats-on/">All events</a></div>
+  <div class="evs" id="wo-list" data-limit="6">${upcoming.slice(0, 6).map(e => evCard(e, byId)).join('')}</div>
 </div></section>
 <section class="sec"><div class="wrap">
   <div class="sec-head"><div><p class="eyebrow" style="color:var(--teal-d)">${featured.length ? 'Featured' : 'Friday night, sorted'}</p><h2>${featured.length ? 'Featured local businesses' : 'Takeaways'}</h2></div><a href="/takeaways/">All takeaways</a></div>
@@ -354,6 +379,20 @@ ${groups.map(([c, l]) => `<section class="sec" style="padding-bottom:0"><div cla
 </div></div></section>`,
     });
   }
+
+  // what's on
+  const days = [...new Set(upcoming.map(e => ukDay(e.starts_at)))];
+  files['whats-on/index.html'] = page({
+    title: "What's on in Whitehill & Bordon — woolmer", desc: 'Live music, quizzes, markets, sport and family events in Whitehill, Bordon, Lindford and Headley Down.', path: '/whats-on/',
+    jsonld: upcoming.length ? upcoming.slice(0, 30).map(e => { const pl = e.place_id && byId[e.place_id]; return { '@context': 'https://schema.org', '@type': 'Event', name: e.title, startDate: e.starts_at, endDate: evEnd(e).toISOString(), eventStatus: 'https://schema.org/EventScheduled', eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode', description: e.details || undefined, location: { '@type': 'Place', name: pl ? pl.name : (e.venue || 'Whitehill & Bordon'), address: pl ? [pl.address_clean, pl.postcode].filter(Boolean).join(', ') || 'Whitehill & Bordon' : 'Whitehill & Bordon, Hampshire' } }; }) : null,
+    body: `<section class="ph dk"><div class="wrap"><nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a> / What's on</nav><h1>What's on</h1><p>Live music, quizzes, markets, sport and family days around Whitehill &amp; Bordon.</p></div></section>
+<section class="sec" style="padding-top:28px"><div class="wrap">
+  <div class="chips wo-filter" role="group" aria-label="Show"><button class="chip chip-l on" data-f="all" type="button">Everything</button><button class="chip chip-l" data-f="today" type="button">Today</button><button class="chip chip-l" data-f="weekend" type="button">This weekend</button><button class="chip chip-l" data-f="week" type="button">Next 7 days</button></div>
+  <div id="wo-all">${days.length ? days.map(d => `<div class="wo-day" data-day="${d}"><h2 class="wo-h">${fmt(d + 'T12:00:00Z', { weekday: 'long', day: 'numeric', month: 'long' })}</h2><div class="evs">${upcoming.filter(e => ukDay(e.starts_at) === d).map(e => evCard(e, byId)).join('')}</div></div>`).join('') : ''}</div>
+  <p class="muted" id="wo-none"${days.length ? ' hidden' : ''}>Nothing listed yet. Running something? Email <a href="mailto:info@woolmer.info">info@woolmer.info</a> and we'll add it free.</p>
+</div></section>`,
+  });
+  files['events.json'] = JSON.stringify(upcoming.map(e => { const pl = e.place_id && byId[e.place_id]; return { ...e, place: pl ? { slug: pl.slug, name: pl.name } : null }; }));
 
   // search
   files['search/index.html'] = page({

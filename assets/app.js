@@ -176,14 +176,14 @@
 (function () {
   var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (reduce || !('IntersectionObserver' in window)) return;
-  var SEL = '.sec-head, .cat, .card, .panel, .why-card, .place-grid > *, .near-tools, .crumbs + h1 ~ p';
+  var SEL = '.sec-head, .cat, .card, .ev, .wo-h, .panel, .why-card, .place-grid > *, .near-tools, .crumbs + h1 ~ p';
   var io = new IntersectionObserver(function (ents) {
     ents.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
   }, { rootMargin: '0px 0px -8% 0px', threshold: 0.08 });
   function arm(root) {
     var groups = new Map();
     (root.querySelectorAll ? root : document).querySelectorAll(SEL).forEach(function (el) {
-      if (el.classList.contains('rv') || el.closest('.hero, .ph, .tabbar, .install')) return;
+      if (el.classList.contains('rv') || el.closest('.hero, .ph, .tabbar, .install, .evstrip')) return;
       var parent = el.parentElement, n = groups.get(parent) || 0;
       groups.set(parent, n + 1);
       el.style.setProperty('--d', Math.min(n, 8));

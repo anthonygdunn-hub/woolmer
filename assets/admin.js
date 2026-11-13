@@ -1,7 +1,7 @@
 /* woolmer admin — only works for info@dunnworks.io (database rules enforce it, this is just the screen) */
 (function () {
   var root = document.getElementById('adm'), WB = window.WB, esc = WB.esc, sb, tab = location.hash.slice(1) || 'claims';
-  var TABS = [['claims', 'Claims'], ['mod', 'Moderation'], ['reports', 'Reports'], ['featured', 'Featured'], ['places', 'Listings'], ['signups', 'Sign-ups'], ['stats', 'Visitors'], ['alerts', 'Alerts'], ['settings', 'Settings']];
+  var TABS = [['claims', 'Claims'], ['mod', 'Moderation'], ['reports', 'Reports'], ['featured', 'Featured'], ['events', "What's on"], ['places', 'Listings'], ['signups', 'Sign-ups'], ['stats', 'Visitors'], ['alerts', 'Alerts'], ['settings', 'Settings']];
   function when(d) { return d ? new Date(d).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''; }
   function err(e) { alert(String(e && e.message || e)); }
   function chk(r) { if (r.error) throw r.error; return r.data; }
@@ -44,7 +44,7 @@
         '<div class="tabs">' + TABS.map(function (t) { return '<button data-t="' + t[0] + '"' + (t[0] === tab ? ' class="on"' : '') + '>' + t[1] + (n[t[0]] ? '<span class="cnt">' + n[t[0]] + '</span>' : '') + '</button>'; }).join('') + '</div><div id="pane"></div>';
       document.getElementById('so').onclick = function () { sb.auth.signOut().then(function () { location.reload(); }); };
       root.querySelectorAll('[data-t]').forEach(function (b) { b.onclick = function () { tab = b.dataset.t; location.hash = tab; shell(); }; });
-      ({ claims: claims, mod: mod, reports: reports, featured: featured, places: places, signups: signups, stats: stats, alerts: alerts, settings: settings })[tab]();
+      ({ claims: claims, mod: mod, reports: reports, featured: featured, events: events, places: places, signups: signups, stats: stats, alerts: alerts, settings: settings })[tab]();
     });
   }
   function pane(h) { document.getElementById('pane').innerHTML = h; }
@@ -163,6 +163,76 @@
         '<div class="item"><strong>Today ' + sum(function (x) { return x.day === today; }) + ' · last 7 days ' + sum(function (x) { return x.day >= wk; }) + ' · last 30 days ' + sum(function () { return true; }) + '</strong>' +
         '<div style="display:flex;align-items:flex-end;gap:2px;height:80px;margin-top:.75em">' + days.map(function (d) { return '<div title="' + d[0] + ': ' + d[1] + '" style="flex:1;background:#1f3a5f;min-height:2px;height:' + Math.round(d[1] / max * 100) + '%"></div>'; }).join('') + '</div></div>' +
         list('Top pages, 30 days', tally('path'), true) + list('Where visitors came from', tally('ref', function (x) { return x.ref; })));
+    });
+  }
+
+  // ------------------------------------------------ what's on (events)
+  function events() {
+    var KINDS = ['Live music', 'Quiz', 'Sport', 'Food & drink', 'Market', 'Family', 'Comedy', 'Community', 'Other'];
+    var since = new Date(Date.now() - 30 * 864e5).toISOString();
+    Promise.all([
+      sb.from('wb_events').select('*').gte('starts_at', since).order('starts_at'),
+      sb.from('wb_places').select('id,name,area').eq('listable', true).order('name')
+    ]).then(function (res) {
+      if (res[0].error) return err(res[0].error);
+      var evs = res[0].data || [], places = res[1].data || [], byId = {}, byName = {};
+      places.forEach(function (p) { byId[p.id] = p; byName[p.name.toLowerCase()] = p; });
+      var now = new Date(), pad = function (n) { return (n < 10 ? '0' : '') + n; };
+      var dIn = function (iso) { var d = new Date(iso); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); };
+      var tIn = function (iso) { var d = new Date(iso); return pad(d.getHours()) + ':' + pad(d.getMinutes()); };
+      var label = function (e) { var d = new Date(e.starts_at); return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }) + ', ' + tIn(e.starts_at) + (e.ends_at ? '–' + tIn(e.ends_at) : ''); };
+      var endOf = function (e) { return e.ends_at ? new Date(e.ends_at) : new Date(new Date(e.starts_at).getTime() + 3 * 36e5); };
+      var up = evs.filter(function (e) { return endOf(e) > now; }), past = evs.filter(function (e) { return endOf(e) <= now; }).reverse();
+      var row = function (e) {
+        var v = e.place_id && byId[e.place_id] ? byId[e.place_id].name : (e.venue || '');
+        return '<div class="item"><strong>' + esc(e.title) + '</strong>' + (e.published ? '' : ' <span class="meta">(hidden)</span>') +
+          '<p class="meta">' + esc(label(e)) + (v ? ' · ' + esc(v) : '') + (e.kind ? ' · ' + esc(e.kind) : '') + (e.price ? ' · ' + esc(e.price) : '') + '</p>' +
+          '<div class="acts"><button class="btn btn-ghost btn-sm" data-ed="' + e.id + '">Edit</button><button class="btn btn-ghost btn-sm" data-dup="' + e.id + '">Copy to next week</button><button class="btn btn-ghost btn-sm" data-del="' + e.id + '">Delete</button></div></div>';
+      };
+      pane('<p class="muted">Events show in the strip at the top of every page, on the home page and at <a href="/whats-on/" target="_blank">/whats-on/</a>. The strip updates straight away; the home and What\'s on pages refresh within the hour for Google.</p>' +
+        '<form class="form item" id="evf"><strong id="evf-h">Add an event</strong><input type="hidden" name="id">' +
+        '<label>Event name<input name="title" maxlength="90" required placeholder="Quiz night"></label>' +
+        '<label>Venue (pick a listing, or type any place)<input name="venue" list="ev-places" maxlength="120" placeholder="The Holly Bush"></label><datalist id="ev-places">' + places.map(function (p) { return '<option value="' + esc(p.name) + '">' + esc(p.area || '') + '</option>'; }).join('') + '</datalist>' +
+        '<div class="row2"><label>Date<input name="date" type="date" required></label><label>Type<select name="kind"><option value="">Choose…</option>' + KINDS.map(function (k) { return '<option>' + k + '</option>'; }).join('') + '</select></label></div>' +
+        '<div class="row2"><label>Starts<input name="start" type="time" required value="19:30"></label><label>Ends (optional)<input name="end" type="time"></label></div>' +
+        '<div class="row2"><label>Price (optional)<input name="price" maxlength="40" placeholder="Free, £5 on the door"></label><label>Link (optional)<input name="url" type="url" maxlength="300" placeholder="https://"></label></div>' +
+        '<label>Details (optional)<textarea name="details" maxlength="600" rows="3" placeholder="Teams of up to 6, cash prizes, food from 6pm"></textarea></label>' +
+        '<div class="row2"><label>Repeat weekly for<select name="rep"><option value="0">Just this once</option>' + [1, 2, 3, 4, 5, 6, 7, 8, 10, 12].map(function (n) { return '<option value="' + n + '">' + (n + 1) + ' weeks in total</option>'; }).join('') + '</select></label><label style="flex-direction:row;align-items:center;gap:8px"><input name="pub" type="checkbox" checked style="width:auto"> Show on the site</label></div>' +
+        '<div class="acts"><button class="btn btn-navy btn-sm" type="submit">Save event</button><button class="btn btn-ghost btn-sm" type="button" id="evf-new" hidden>Cancel edit</button></div><p class="meta" id="evf-msg" role="status"></p></form>' +
+        '<h3 style="margin:1.5em 0 .5em">Coming up (' + up.length + ')</h3>' + (up.length ? up.map(row).join('') : '<p class="muted">Nothing booked in yet.</p>') +
+        (past.length ? '<h3 style="margin:1.5em 0 .5em">Last 30 days</h3>' + past.map(row).join('') : ''));
+      var f = document.getElementById('evf'), msg = document.getElementById('evf-msg');
+      var find = function (id) { return evs.filter(function (e) { return e.id === id; })[0]; };
+      var fill = function (e, shiftDays) {
+        var s = new Date(new Date(e.starts_at).getTime() + (shiftDays || 0) * 864e5), en = e.ends_at ? new Date(new Date(e.ends_at).getTime() + (shiftDays || 0) * 864e5) : null;
+        f.id.value = shiftDays ? '' : e.id; f.title.value = e.title; f.venue.value = e.place_id && byId[e.place_id] ? byId[e.place_id].name : (e.venue || '');
+        f.date.value = dIn(s.toISOString()); f.start.value = tIn(s.toISOString()); f.end.value = en ? tIn(en.toISOString()) : '';
+        f.kind.value = e.kind || ''; f.price.value = e.price || ''; f.url.value = e.url || ''; f.details.value = e.details || ''; f.pub.checked = e.published; f.rep.value = '0';
+        document.getElementById('evf-h').textContent = shiftDays ? 'Copy of "' + e.title + '" for next week' : 'Edit event';
+        document.getElementById('evf-new').hidden = false; f.scrollIntoView({ behavior: 'smooth' }); f.title.focus();
+      };
+      document.getElementById('evf-new').onclick = function () { shell(); };
+      root.querySelectorAll('[data-ed]').forEach(function (b) { b.onclick = function () { fill(find(b.dataset.ed)); }; });
+      root.querySelectorAll('[data-dup]').forEach(function (b) { b.onclick = function () { fill(find(b.dataset.dup), 7); }; });
+      root.querySelectorAll('[data-del]').forEach(function (b) {
+        b.onclick = function () {
+          var e = find(b.dataset.del);
+          if (!confirm('Delete "' + e.title + '" on ' + label(e) + '? This cannot be undone.')) return;
+          sb.from('wb_events').delete().eq('id', e.id).then(function (r) { if (r.error) return err(r.error); shell(); });
+        };
+      });
+      f.onsubmit = function (ev) {
+        ev.preventDefault();
+        var start = new Date(f.date.value + 'T' + f.start.value), end = null;
+        if (f.end.value) { end = new Date(f.date.value + 'T' + f.end.value); if (end <= start) end = new Date(end.getTime() + 864e5); }
+        var pl = byName[f.venue.value.trim().toLowerCase()];
+        var base = { title: f.title.value.trim(), place_id: pl ? pl.id : null, venue: pl ? null : (f.venue.value.trim() || null), kind: f.kind.value || null, price: f.price.value.trim() || null, url: f.url.value.trim() || null, details: f.details.value.trim() || null, published: f.pub.checked };
+        var rows = [], reps = f.id.value ? 0 : +f.rep.value;
+        for (var w = 0; w <= reps; w++) rows.push(Object.assign({}, base, { starts_at: new Date(start.getTime() + w * 7 * 864e5).toISOString(), ends_at: end ? new Date(end.getTime() + w * 7 * 864e5).toISOString() : null }));
+        msg.textContent = 'Saving…';
+        var q = f.id.value ? sb.from('wb_events').update(rows[0]).eq('id', f.id.value) : sb.from('wb_events').insert(rows);
+        q.then(function (r) { if (r.error) { msg.textContent = ''; return err(r.error); } shell(); });
+      };
     });
   }
 
