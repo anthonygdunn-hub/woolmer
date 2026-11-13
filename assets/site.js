@@ -92,6 +92,14 @@
     d.addEventListener('close', function () { d.remove(); });
   });
 
+  // cookie-free page count: path + referring site only, nothing about the visitor
+  try {
+    var pth = location.pathname;
+    if (!/bot|crawl|spider|headless/i.test(navigator.userAgent) && navigator.doNotTrack !== '1' && !/^\/(admin|account|claim)\//.test(pth) && location.hostname === 'woolmer.info') {
+      var rh = ''; try { rh = document.referrer ? new URL(document.referrer).hostname : ''; } catch (e) {}
+      WB.rest('rpc/wb_hit', { method: 'POST', body: { p_path: pth, p_ref: rh } }).catch(function () {});
+    }
+  } catch (e) {}
   // newsletter / business sign-up
   var f = document.getElementById('su-form');
   if (f) {

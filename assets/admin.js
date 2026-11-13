@@ -1,7 +1,7 @@
 /* woolmer admin — only works for info@dunnworks.io (database rules enforce it, this is just the screen) */
 (function () {
   var root = document.getElementById('adm'), WB = window.WB, esc = WB.esc, sb, tab = location.hash.slice(1) || 'claims';
-  var TABS = [['claims', 'Claims'], ['mod', 'Moderation'], ['reports', 'Reports'], ['featured', 'Featured'], ['places', 'Listings'], ['signups', 'Sign-ups'], ['settings', 'Settings']];
+  var TABS = [['claims', 'Claims'], ['mod', 'Moderation'], ['reports', 'Reports'], ['featured', 'Featured'], ['places', 'Listings'], ['signups', 'Sign-ups'], ['stats', 'Visitors'], ['settings', 'Settings']];
   function when(d) { return d ? new Date(d).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''; }
   function err(e) { alert(String(e && e.message || e)); }
   function chk(r) { if (r.error) throw r.error; return r.data; }
@@ -44,7 +44,7 @@
         '<div class="tabs">' + TABS.map(function (t) { return '<button data-t="' + t[0] + '"' + (t[0] === tab ? ' class="on"' : '') + '>' + t[1] + (n[t[0]] ? '<span class="cnt">' + n[t[0]] + '</span>' : '') + '</button>'; }).join('') + '</div><div id="pane"></div>';
       document.getElementById('so').onclick = function () { sb.auth.signOut().then(function () { location.reload(); }); };
       root.querySelectorAll('[data-t]').forEach(function (b) { b.onclick = function () { tab = b.dataset.t; location.hash = tab; shell(); }; });
-      ({ claims: claims, mod: mod, reports: reports, featured: featured, places: places, signups: signups, settings: settings })[tab]();
+      ({ claims: claims, mod: mod, reports: reports, featured: featured, places: places, signups: signups, stats: stats, settings: settings })[tab]();
     });
   }
   function pane(h) { document.getElementById('pane').innerHTML = h; }
@@ -146,6 +146,23 @@
       }).join(''));
       document.getElementById('cp').onclick = function () { navigator.clipboard.writeText(emails.join(', ')); this.textContent = 'Copied ' + emails.length; };
       act('[data-sd]', function (b) { return sb.from('wb_signups').update({ handled: true }).eq('id', +b.dataset.sd).then(chk); });
+    });
+  }
+
+  // ------------------------------------------------ visitors
+  function stats() {
+    var since = new Date(Date.now() - 29 * 864e5).toISOString().slice(0, 10);
+    sb.from('wb_views').select('day,path,ref,n').gte('day', since).limit(20000).then(function (r) {
+      if (r.error) return err(r.error);
+      var rows = r.data || [], today = new Date().toISOString().slice(0, 10), wk = new Date(Date.now() - 6 * 864e5).toISOString().slice(0, 10);
+      var sum = function (f) { return rows.filter(f).reduce(function (a, x) { return a + x.n; }, 0); };
+      var tally = function (key, f) { var m = {}; rows.filter(f || function () { return true; }).forEach(function (x) { m[x[key]] = (m[x[key]] || 0) + x.n; }); return Object.keys(m).map(function (k) { return [k, m[k]]; }).sort(function (a, b) { return b[1] - a[1]; }); };
+      var days = tally('day').sort(function (a, b) { return a[0] < b[0] ? -1 : 1; }), max = Math.max.apply(null, days.map(function (d) { return d[1]; }).concat([1]));
+      var list = function (t, arr, link) { return '<div class="item"><strong>' + t + '</strong>' + (arr.length ? arr.slice(0, 15).map(function (x) { return '<p class="meta" style="display:flex;justify-content:space-between;gap:1em"><span>' + (link ? '<a href="' + esc(x[0]) + '" target="_blank">' + esc(x[0]) + '</a>' : esc(x[0] || 'Direct or unknown')) + '</span><b>' + x[1] + '</b></p>'; }).join('') : '<p class="meta">Nothing yet.</p>') + '</div>'; };
+      pane('<p class="muted">Page views, counted without cookies. No visitor is identified.</p>' +
+        '<div class="item"><strong>Today ' + sum(function (x) { return x.day === today; }) + ' · last 7 days ' + sum(function (x) { return x.day >= wk; }) + ' · last 30 days ' + sum(function () { return true; }) + '</strong>' +
+        '<div style="display:flex;align-items:flex-end;gap:2px;height:80px;margin-top:.75em">' + days.map(function (d) { return '<div title="' + d[0] + ': ' + d[1] + '" style="flex:1;background:#1f3a5f;min-height:2px;height:' + Math.round(d[1] / max * 100) + '%"></div>'; }).join('') + '</div></div>' +
+        list('Top pages, 30 days', tally('path'), true) + list('Where visitors came from', tally('ref', function (x) { return x.ref; })));
     });
   }
 
