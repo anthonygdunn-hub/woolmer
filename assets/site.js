@@ -24,6 +24,19 @@
     if (!WB._client && window.supabase) WB._client = window.supabase.createClient(WB.url, WB.key, { auth: { persistSession: true, detectSessionInUrl: true, flowType: 'pkce' } });
     return WB._client;
   };
+  // sign-in: emails a link + code via the wb-login function (branded, from woolmer.info)
+  WB.sendLink = function (email, next) {
+    return fetch(WB.url + '/functions/v1/wb-login', { method: 'POST', headers: { 'Content-Type': 'application/json', apikey: WB.key }, body: JSON.stringify({ email: email, next: next || (location.pathname + location.search) }) })
+      .then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(j.error || 'Could not send the email.'); return j; }); });
+  };
+  // if we arrived from a sign-in link, swap its token for a session and tidy the address bar
+  WB.consumeLink = function (sb) {
+    var q = new URLSearchParams(location.search), th = q.get('token_hash');
+    if (!th) return Promise.resolve(null);
+    q.delete('token_hash'); q.delete('type');
+    var clean = location.pathname + (q.toString() ? '?' + q : '');
+    return sb.auth.verifyOtp({ token_hash: th, type: 'magiclink' }).then(function (r) { history.replaceState(null, '', clean); return r; });
+  };
   window.WB = WB;
 
   // mobile menu

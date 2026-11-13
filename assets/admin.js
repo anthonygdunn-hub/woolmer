@@ -9,7 +9,7 @@
   function start() {
     if (!window.supabase) return setTimeout(start, 60);
     sb = WB.client();
-    sb.auth.getSession().then(function (r) {
+    WB.consumeLink(sb).then(function () { return sb.auth.getSession(); }).then(function (r) {
       var u = r.data.session && r.data.session.user;
       if (!u) return signIn();
       sb.rpc('dw_is_owner').then(function (o) {
@@ -24,9 +24,9 @@
     var f = document.getElementById('si');
     f.onsubmit = function (e) {
       e.preventDefault();
-      sb.auth.signInWithOtp({ email: f.email.value.trim(), options: { emailRedirectTo: location.href, shouldCreateUser: false } }).then(function (r) {
-        var m = f.querySelector('.msg'); m.className = 'msg ' + (r.error ? 'err' : 'ok'); m.textContent = r.error ? r.error.message : 'Check your email.';
-      });
+      var m = f.querySelector('.msg');
+      WB.sendLink(f.email.value.trim(), '/admin/').then(function () { m.className = 'msg ok'; m.textContent = 'Check your email and tap the link.'; })
+        .catch(function (e2) { m.className = 'msg err'; m.textContent = e2.message; });
     };
   }
 

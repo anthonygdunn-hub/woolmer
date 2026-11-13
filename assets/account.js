@@ -13,7 +13,10 @@
   function start() {
     if (!window.supabase) return setTimeout(start, 60);
     sb = WB.client();
-    Promise.all([sb.auth.getSession(), WB.getSettings()]).then(function (r) {
+    WB.consumeLink(sb).then(function (v) {
+      if (v && v.error) html('<p class="notice">That sign-in link has expired or already been used. Pop your email in below for a fresh one.</p>');
+      return Promise.all([sb.auth.getSession(), WB.getSettings()]);
+    }).then(function (r) {
       settings = r[1] || {};
       user = r[0].data.session && r[0].data.session.user;
       sb.auth.onAuthStateChange(function (ev, s) { if (ev === 'SIGNED_IN' && !user) { user = s.user; route(); } });
@@ -23,17 +26,29 @@
 
   // ---------------------------------------------------------------- sign in
   function signIn(reason) {
-    html('<h2>Sign in</h2><p class="muted">' + esc(reason || 'We\'ll email you a link. Click it and you\'re in, no password needed.') + '</p>' +
+    html('<h2>Sign in</h2><p class="muted">' + esc(reason || 'We\'ll email you a link and a code. No password needed.') + '</p>' +
       '<form class="form" id="si"><label>Email<input type="email" name="email" required autocomplete="email"></label>' +
       '<button class="btn btn-navy" type="submit" style="align-self:flex-start">Email me a sign-in link</button><p class="msg" role="status"></p></form>');
     var f = document.getElementById('si');
     f.addEventListener('submit', function (e) {
       e.preventDefault();
-      var m = f.querySelector('.msg'), email = f.email.value.trim();
-      f.querySelector('button').disabled = true;
-      sb.auth.signInWithOtp({ email: email, options: { emailRedirectTo: location.href } }).then(function (r) {
-        if (r.error) { msg(m, false, niceErr(r.error)); f.querySelector('button').disabled = false; return; }
-        msg(m, true, 'Check your email for the link (it can take a minute, and check your spam folder). You can close this tab.');
+      var m = f.querySelector('.msg'), email = f.email.value.trim(), b = f.querySelector('button');
+      b.disabled = true; msg(m, true, 'Sending…');
+      WB.sendLink(email).then(function () { codeForm(email); }).catch(function (err) { msg(m, false, niceErr(err)); b.disabled = false; });
+    });
+  }
+  function codeForm(email) {
+    html('<h2>Check your email</h2><p>We\'ve sent a sign-in link to <strong>' + esc(email) + '</strong>. Tap it, or type the 6-digit code from the email here.</p>' +
+      '<form class="form" id="cf"><label>Code<input name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required style="font:600 22px ui-monospace,Menlo,monospace;letter-spacing:.3em;max-width:220px"></label>' +
+      '<button class="btn btn-navy" type="submit" style="align-self:flex-start">Sign in</button><p class="msg" role="status"></p>' +
+      '<p class="muted" style="font-size:14px;margin:0">Nothing after a couple of minutes? Check spam, or <button type="button" class="linkish" id="again">start again</button>.</p></form>');
+    var f = document.getElementById('cf');
+    document.getElementById('again').onclick = function () { signIn(); };
+    f.addEventListener('submit', function (e) {
+      e.preventDefault(); var m = f.querySelector('.msg');
+      sb.auth.verifyOtp({ email: email, token: f.code.value.trim(), type: 'email' }).then(function (r) {
+        if (r.error) return msg(m, false, 'That code didn\'t work. Check it, or start again for a new one.');
+        user = r.data.user; route();
       });
     });
   }
