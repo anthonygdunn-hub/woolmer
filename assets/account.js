@@ -38,8 +38,8 @@
     });
   }
   function codeForm(email) {
-    html('<h2>Check your email</h2><p>We\'ve sent a sign-in link to <strong>' + esc(email) + '</strong>. Tap it, or type the 6-digit code from the email here.</p>' +
-      '<form class="form" id="cf"><label>Code<input name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required style="font:600 22px ui-monospace,Menlo,monospace;letter-spacing:.3em;max-width:220px"></label>' +
+    html('<h2>Check your email</h2><p>We\'ve sent a sign-in link to <strong>' + esc(email) + '</strong>. Tap it, or type the code from the email here.</p>' +
+      '<form class="form" id="cf"><label>Code<input name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6,10}" maxlength="10" required style="font:600 22px ui-monospace,Menlo,monospace;letter-spacing:.3em;max-width:260px"></label>' +
       '<button class="btn btn-navy" type="submit" style="align-self:flex-start">Sign in</button><p class="msg" role="status"></p>' +
       '<p class="muted" style="font-size:14px;margin:0">Nothing after a couple of minutes? Check spam, or <button type="button" class="linkish" id="again">start again</button>.</p></form>');
     var f = document.getElementById('cf');
