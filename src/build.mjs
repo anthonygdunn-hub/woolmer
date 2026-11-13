@@ -131,7 +131,7 @@ ${jsonld ? `<script type="application/ld+json">${JSON.stringify(jsonld).replace(
 <header class="site-h">
   <div class="wrap">
     <a class="logo" href="/" aria-label="woolmer home">${TREE()}<b>woolmer</b><small>the W&amp;B guide</small></a>
-    <nav class="nav" id="nav" aria-label="Main">${NAV.map(([t, h]) => `<a href="${h}"${p.startsWith(h) ? ' aria-current="page"' : ''}>${esc(t)}</a>`).join('')}</nav>
+    <nav class="nav" id="nav" aria-label="Main">${NAV.filter(([, h]) => REV || h !== "/ask/").map(([t, h]) => `<a href="${h}"${p.startsWith(h) ? ' aria-current="page"' : ''}>${esc(t)}</a>`).join('')}</nav>
     <div class="h-actions">
       <a class="btn btn-ghost btn-sm" href="/account/">Sign in</a>
       <a class="btn btn-navy btn-sm" href="/business/">List your business</a>
@@ -222,7 +222,7 @@ function build(data) {
     body: `<section class="hero dk"><div class="wrap">
   <p class="eyebrow">Whitehill · Bordon · Lindford · Headley Down</p>
   <h1>Everything local, finally in <span>one place.</span></h1>
-  <p class="lead">${places.length} local takeaways, pubs, cafés and shops, with food hygiene ratings, opening hours, menus and answers from people who live here.</p>
+  <p class="lead">${places.length} local takeaways, pubs, cafés and shops, with maps, food hygiene ratings, opening hours and menus${REV ? ', and answers from people who live here' : ''}.</p>
   <form class="search" action="/search/" role="search"><label class="sr" for="q">Search woolmer</label><input id="q" name="q" type="search" placeholder="Try &quot;chippy&quot;, &quot;pub Headley&quot; or &quot;Lidl&quot;"><button class="btn btn-fountain" type="submit">Search</button></form>
   <div class="chips">${CATS.slice(0, 5).map(c => `<a class="chip" href="/${c.slug}/">${esc(c.name)}</a>`).join('')}</div>
 </div></section>
