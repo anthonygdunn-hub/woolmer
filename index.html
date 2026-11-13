@@ -65,6 +65,27 @@ header .wrap{display:flex;align-items:center;justify-content:space-between;gap:1
 .biz-card{background:var(--navy);color:#fff;border-radius:26px;padding:48px;display:flex;flex-wrap:wrap;gap:24px;align-items:center;justify-content:space-between}
 .biz-card h2{font-size:40px;letter-spacing:-1px;margin-bottom:10px}
 .biz-card p{margin:0;font-size:17px;line-height:1.5;max-width:600px;color:var(--od2)}
+.signup{padding:0 0 80px}
+.su-card{background:var(--card);border:1px solid var(--ln);border-radius:26px;padding:48px;display:flex;flex-wrap:wrap;gap:40px}
+.su-intro{flex:1 1 300px;min-width:0}
+.su-intro h2{font-size:40px;letter-spacing:-1px;margin-bottom:12px}
+.su-intro p{margin:0;color:var(--mu)}
+.su-form{flex:2 1 420px;min-width:0;display:flex;flex-direction:column;gap:16px}
+.seg{display:inline-flex;background:var(--page);border:1px solid var(--ln);border-radius:999px;padding:4px;gap:4px;align-self:flex-start}
+.seg button{border:0;background:transparent;border-radius:999px;padding:10px 16px;font:inherit;font-weight:600;font-size:14px;color:var(--ink);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--navy2);color:#fff}
+.row2{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
+.su-form label{display:flex;flex-direction:column;gap:6px;font-size:14px;font-weight:500}
+.su-form input,.su-form select,.su-form textarea{font:inherit;font-size:15px;padding:12px 14px;border:1px solid var(--tiara);border-radius:12px;background:#fff;color:var(--ink)}
+.su-form input:focus,.su-form select:focus,.su-form textarea:focus{outline:2px solid var(--fountain);outline-offset:1px;border-color:var(--fountain)}
+.su-form .check{flex-direction:row;align-items:flex-start;gap:10px;font-weight:400;color:var(--mu)}
+.su-form .check input{margin-top:4px;width:18px;height:18px}
+.hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+.biz-only[hidden]{display:none}
+.su-msg{margin:0;font-weight:600}
+.su-msg.ok{color:#1C7F80}.su-msg.err{color:#B3261E}
+.su-form button[type=submit]{align-self:flex-start}
+@media (max-width:640px){.su-card{padding:28px}.su-intro h2{font-size:32px}}
 footer{background:var(--deep);color:var(--od2);font-size:14px}
 footer .wrap{padding-top:48px;padding-bottom:40px;display:flex;flex-wrap:wrap;gap:24px;justify-content:space-between;align-items:flex-start}
 footer .logo b{color:#fff;font-size:22px}
@@ -86,7 +107,7 @@ footer a{color:var(--od2)}
       <svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><path d="M13 2.5 L8 8.5 M13 2.5 L18 8.5 M13 8 L5.5 15.5 M13 8 L20.5 15.5 M13 13.5 L3 23 M13 13.5 L23 23 M13 2.5 V23.5" stroke="#FF862F" stroke-width="2.2" stroke-linecap="round" fill="none"/></svg>
       <b>woolmer</b><small>the W&amp;B guide</small>
     </a>
-    <a class="btn btn-navy" href="mailto:info@woolmer.info?subject=List%20my%20business%20on%20woolmer">List your business</a>
+    <a class="btn btn-navy" href="#signup" data-kind="business">List your business</a>
   </div>
 </header>
 
@@ -99,7 +120,7 @@ footer a{color:var(--od2)}
       <h1>Everything local,<br>finally in<br><span>one place.</span></h1>
       <p class="lead">A new, independent guide to every shop, takeaway, pub, club and pitch in Whitehill &amp; Bordon. Menus, opening hours, honest local reviews and answers from people who live here.</p>
       <div class="ctas">
-        <a class="btn btn-fountain" href="mailto:info@woolmer.info?subject=Tell%20me%20when%20woolmer%20launches&amp;body=Please%20let%20me%20know%20when%20woolmer.info%20goes%20live.">Tell me when it launches</a>
+        <a class="btn btn-fountain" href="#signup" data-kind="resident">Tell me when it launches</a>
         <a class="btn btn-line" href="#why-woolmer">Why "woolmer"?</a>
       </div>
     </div>
@@ -142,6 +163,45 @@ footer a{color:var(--od2)}
   </div>
 </section>
 
+<section class="signup" id="signup">
+  <div class="wrap">
+    <div class="su-card">
+      <div class="su-intro">
+        <h2>Be first in</h2>
+        <p>Leave your email and we'll tell you the day woolmer goes live. Run a local business? Tell us a little about it and we'll get your free listing ready before launch.</p>
+      </div>
+      <form class="su-form" id="su-form" novalidate>
+        <div class="seg" role="group" aria-label="I am">
+          <button type="button" data-kind="resident" aria-pressed="true">I live locally</button>
+          <button type="button" data-kind="business" aria-pressed="false">I run a business</button>
+        </div>
+        <div class="row2">
+          <label>Your name<input name="name" autocomplete="name" maxlength="120"></label>
+          <label>Email<input name="email" type="email" autocomplete="email" required maxlength="200"></label>
+        </div>
+        <div class="biz-only" hidden>
+          <div class="row2">
+            <label>Business name<input name="business_name" autocomplete="organization" maxlength="160"></label>
+            <label>What kind of business
+              <select name="business_type">
+                <option value="">Choose one</option>
+                <option>Takeaway</option><option>Café or restaurant</option><option>Pub or bar</option><option>Shop</option>
+                <option>Trades and services</option><option>Health and beauty</option><option>Sport, fitness or club</option><option>Other</option>
+              </select>
+            </label>
+            <label>Phone (optional)<input name="phone" type="tel" autocomplete="tel" maxlength="40"></label>
+          </div>
+        </div>
+        <label>Anything you'd like to tell us (optional)<textarea name="message" rows="3" maxlength="1000"></textarea></label>
+        <label class="hp" aria-hidden="true">Leave this empty<input name="website" tabindex="-1" autocomplete="off"></label>
+        <label class="check"><input type="checkbox" name="consent" required><span>I'm happy for woolmer to email me about the launch and, if I run a business, my listing. You can ask us to delete your details any time at info@woolmer.info. <a href="privacy.html">Privacy</a>.</span></label>
+        <button class="btn btn-navy" type="submit">Sign me up</button>
+        <p class="su-msg" role="status" aria-live="polite"></p>
+      </form>
+    </div>
+  </div>
+</section>
+
 <section class="biz">
   <div class="wrap">
     <div class="biz-card dk">
@@ -149,7 +209,7 @@ footer a{color:var(--od2)}
         <h2>Run a local business?</h2>
         <p>Get listed before we launch. It's free to have your business on woolmer, with your menu, photos and opening hours, and you can reply to reviews and questions yourself.</p>
       </div>
-      <a class="btn btn-fountain" href="mailto:info@woolmer.info?subject=List%20my%20business%20on%20woolmer&amp;body=Business%20name%3A%0AWhat%20you%20do%3A%0AAddress%3A%0APhone%3A%0AWebsite%20or%20social%3A%0A">Get listed first</a>
+      <a class="btn btn-fountain" href="#signup" data-kind="business">Get listed first</a>
     </div>
   </div>
 </section>
@@ -163,9 +223,34 @@ footer a{color:var(--od2)}
     </div>
     <div>
       <p style="margin:0 0 6px">Get in touch: <a href="mailto:info@woolmer.info">info@woolmer.info</a></p>
-      <p style="margin:0">© 2026 woolmer</p>
+      <p style="margin:0"><a href="privacy.html">Privacy</a> · © 2026 woolmer</p>
     </div>
   </div>
 </footer>
+<script>
+(function(){
+  var URL='https://acdpgarasgfhvupzsbxf.supabase.co/rest/v1/wb_signups', KEY='sb_publishable_OWTVpDyadL1lITnCp4gfAQ_EZxVHldY';
+  var f=document.getElementById('su-form'), msg=f.querySelector('.su-msg'), biz=f.querySelector('.biz-only'), kind='resident';
+  function setKind(k){kind=k;biz.hidden=k!=='business';f.querySelectorAll('.seg button').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.kind===k));});}
+  f.querySelectorAll('.seg button').forEach(function(b){b.addEventListener('click',function(){setKind(b.dataset.kind);});});
+  document.querySelectorAll('a[href="#signup"][data-kind]').forEach(function(a){a.addEventListener('click',function(){setKind(a.dataset.kind);});});
+  f.addEventListener('submit',function(e){
+    e.preventDefault(); msg.className='su-msg'; msg.textContent='';
+    var d=new FormData(f);
+    if(d.get('website')) return;
+    var email=String(d.get('email')||'').trim();
+    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){msg.className='su-msg err';msg.textContent='Please enter a valid email address.';return;}
+    if(!d.get('consent')){msg.className='su-msg err';msg.textContent='Please tick the box so we can email you.';return;}
+    if(kind==='business'&&!String(d.get('business_name')||'').trim()){msg.className='su-msg err';msg.textContent='Please add your business name.';return;}
+    var body={kind:kind,email:email,name:(d.get('name')||'').trim()||null,message:(d.get('message')||'').trim()||null,consent:true};
+    if(kind==='business'){body.business_name=(d.get('business_name')||'').trim();body.business_type=d.get('business_type')||null;body.phone=(d.get('phone')||'').trim()||null;}
+    var btn=f.querySelector('button[type=submit]'); btn.disabled=true;
+    fetch(URL,{method:'POST',headers:{'apikey':KEY,'Authorization':'Bearer '+KEY,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify(body)})
+      .then(function(r){if(!r.ok)throw new Error(r.status);f.reset();setKind(kind);msg.className='su-msg ok';msg.textContent=kind==='business'?'Thanks, you\'re on the list. We\'ll be in touch about your listing.':'Thanks, you\'re on the list. We\'ll email you when woolmer goes live.';})
+      .catch(function(){msg.className='su-msg err';msg.textContent='Sorry, that didn\'t go through. Please try again, or email info@woolmer.info.';})
+      .finally(function(){btn.disabled=false;});
+  });
+})();
+</script>
 </body>
 </html>
