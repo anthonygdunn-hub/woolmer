@@ -197,3 +197,71 @@ button.chip{font:inherit;font-size:13px;cursor:pointer}
 /* installed app: no browser chrome, so tidy the header */
 .is-app .site-h{padding-top:env(safe-area-inset-top)}
 @media (max-width:640px){.is-app .h-actions .btn-navy{display:none}}
+
+/* ---------- Hero photo ---------- */
+.hero-photo{position:relative;overflow:hidden;isolation:isolate}
+.hero-bg{position:absolute;inset:0;z-index:-1;background:var(--navy) url(/assets/img/hero-broxhead-1920.webp) center 60%/cover no-repeat;transform-origin:60% 50%;animation:kenburns 28s ease-in-out infinite alternate}
+.hero-bg::after{content:"";position:absolute;inset:0;background:linear-gradient(100deg,rgba(12,36,60,.94) 0%,rgba(12,36,60,.80) 42%,rgba(12,36,60,.38) 100%),linear-gradient(to top,rgba(12,36,60,.85),rgba(12,36,60,0) 45%)}
+@media (max-width:800px){.hero-bg{background-image:url(/assets/img/hero-broxhead-960.webp)}.hero-bg::after{background:linear-gradient(to bottom,rgba(12,36,60,.72),rgba(12,36,60,.9))}}
+.hero-credit{position:absolute;right:14px;bottom:8px;margin:0;font-size:11px;color:rgba(255,255,255,.6)}
+.hero-credit a{color:inherit}
+@keyframes kenburns{from{transform:scale(1.04) translate(0,0)}to{transform:scale(1.14) translate(-1.5%,-1%)}}
+
+/* hero entrance */
+.hero .wrap>*{animation:rise .8s cubic-bezier(.2,.7,.2,1) both}
+.hero .wrap>*:nth-child(2){animation-delay:.08s}
+.hero .wrap>*:nth-child(3){animation-delay:.18s}
+.hero .wrap>*:nth-child(4){animation-delay:.28s}
+.hero .wrap>*:nth-child(5){animation-delay:.38s}
+.ph .wrap>*{animation:rise .6s cubic-bezier(.2,.7,.2,1) both}
+.ph .wrap>*:nth-child(2){animation-delay:.07s}
+.ph .wrap>*:nth-child(3){animation-delay:.14s}
+@keyframes rise{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+
+/* chips and buttons */
+.chip,.btn{transition:transform .2s cubic-bezier(.2,.7,.2,1),box-shadow .2s,background-color .2s,border-color .2s,color .2s}
+.chip:hover{transform:translateY(-2px);border-color:var(--fountain);background:rgba(255,255,255,.08)}
+.chip-l:hover{background:var(--card)}
+.btn:not(:disabled):hover{transform:translateY(-2px);box-shadow:0 8px 20px -8px rgba(12,36,60,.45)}
+.btn:not(:disabled):active,.chip:active{transform:translateY(0) scale(.97)}
+.btn-fountain{background-image:linear-gradient(110deg,transparent 35%,rgba(255,255,255,.45) 50%,transparent 65%);background-size:250% 100%;background-position:120% 0}
+.btn-fountain:not(:disabled):hover{animation:sheen .9s ease}
+@keyframes sheen{from{background-position:120% 0}to{background-position:-20% 0}}
+.search input{transition:box-shadow .25s}
+.search input:focus{box-shadow:0 0 0 4px rgba(255,255,255,.18)}
+
+/* category tiles */
+.cat{position:relative;overflow:hidden;transition:transform .3s cubic-bezier(.2,.7,.2,1),box-shadow .3s,border-color .3s}
+.cat::before{content:"";position:absolute;inset:0;background:radial-gradient(260px circle at var(--mx,50%) var(--my,0%),rgba(77,201,196,.16),transparent 60%);opacity:0;transition:opacity .3s;pointer-events:none}
+.cat:hover{transform:translateY(-6px);box-shadow:0 18px 34px -18px rgba(12,36,60,.45)}
+.cat:hover::before{opacity:1}
+.cat:active{transform:translateY(-2px) scale(.98)}
+.cat .ico{transition:transform .35s cubic-bezier(.3,1.6,.5,1),background-color .3s}
+.cat:hover .ico{transform:rotate(-8deg) scale(1.12);background:var(--fountain)}
+.cat:hover .ico svg{animation:wiggle .6s ease}
+.cat .ico svg{transition:color .3s}
+.cat:hover .ico svg{color:var(--navy);stroke:var(--navy)}
+@keyframes wiggle{0%,100%{transform:rotate(0)}25%{transform:rotate(-12deg)}50%{transform:rotate(10deg)}75%{transform:rotate(-5deg)}}
+.cat b{transition:color .2s}
+
+/* cards */
+.card{transition:transform .3s cubic-bezier(.2,.7,.2,1),box-shadow .3s,border-color .3s}
+.card:hover{transform:translateY(-5px);box-shadow:0 20px 36px -20px rgba(12,36,60,.5)}
+.card .art{transition:background-color .3s}
+.card .art .initial{transition:transform .5s cubic-bezier(.3,1.6,.5,1),opacity .3s;transform-origin:left bottom}
+.card:hover .art .initial{transform:scale(1.25) rotate(-4deg);opacity:.6}
+
+/* scroll reveal (added by app.js only when JS runs) */
+.rv{opacity:0;transform:translateY(24px);transition:opacity .7s cubic-bezier(.2,.7,.2,1),transform .7s cubic-bezier(.2,.7,.2,1);transition-delay:calc(var(--d,0) * 60ms)}
+.rv.in{opacity:1;transform:none}
+.cat.rv.in{transition:opacity .7s cubic-bezier(.2,.7,.2,1),transform .3s cubic-bezier(.2,.7,.2,1),box-shadow .3s,border-color .3s;transition-delay:calc(var(--d,0) * 60ms),0s,0s,0s}
+.cat.rv.in:hover{transform:translateY(-6px)}
+
+/* tab bar press */
+.tabbar a{transition:transform .15s,color .2s}
+.tabbar a:active{transform:scale(.9)}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+  .rv{opacity:1;transform:none}
+}

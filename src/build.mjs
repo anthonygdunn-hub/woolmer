@@ -128,6 +128,7 @@ ${noindex ? '<meta name="robots" content="noindex">' : ''}
 <meta property="og:image" content="${SITE}/assets/og.png">
 <meta name="theme-color" content="#0C243C">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+${p === '/' ? '<link rel="preload" as="image" href="/assets/img/hero-broxhead-960.webp" media="(max-width:800px)"><link rel="preload" as="image" href="/assets/img/hero-broxhead-1920.webp" media="(min-width:801px)">' : ''}
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -237,16 +238,16 @@ function build(data) {
     desc: `Every takeaway, pub, café and shop in Whitehill & Bordon in one place: ${places.length} local businesses with food hygiene ratings, opening hours${REV ? ', menus and local reviews' : ' and menus'}.`,
     path: '/',
     jsonld: { '@context': 'https://schema.org', '@type': 'WebSite', name: 'woolmer', url: SITE + '/', potentialAction: { '@type': 'SearchAction', target: SITE + '/search/?q={q}', 'query-input': 'required name=q' } },
-    body: `<section class="hero dk"><div class="wrap">
+    body: `<section class="hero hero-photo dk"><div class="hero-bg" aria-hidden="true"></div><div class="wrap">
   <p class="eyebrow">Whitehill · Bordon · Lindford · Headley Down</p>
   <h1>Everything local, finally in <span>one place.</span></h1>
   <p class="lead">${places.length} local takeaways, pubs, cafés and shops, with maps, food hygiene ratings, opening hours and menus${REV ? ', and answers from people who live here' : ''}.</p>
   <form class="search" action="/search/" role="search"><label class="sr" for="q">Search woolmer</label><input id="q" name="q" type="search" placeholder="Try &quot;chippy&quot;, &quot;pub Headley&quot; or &quot;Lidl&quot;"><button class="btn btn-fountain" type="submit">Search</button></form>
   <div class="chips"><a class="chip" href="/near/">📍 Near me</a>${CATS.slice(0, 5).map(c => `<a class="chip" href="/${c.slug}/">${esc(c.name)}</a>`).join('')}</div>
-</div></section>
+</div><p class="hero-credit">Photo: <a href="https://commons.wikimedia.org/wiki/File:Pond_on_Broxhead_Common,_Hampshire_-_geograph.org.uk_-_5927349.jpg" rel="nofollow">Pond on Broxhead Common</a> by John P Reeves, <a href="https://creativecommons.org/licenses/by-sa/2.0/" rel="nofollow">CC BY-SA 2.0</a></p></section>
 <section class="sec sec-band"><div class="wrap">
   <div class="sec-head"><h2>What are you after?</h2><a href="/search/">Search everything</a></div>
-  <div class="cats">${CATS.filter(c => counts[c.name]).map(c => `<a class="cat" href="/${c.slug}/"><span class="ico">${icon(c.icon)}</span><span><b>${esc(c.name)}</b><span>${counts[c.name]} place${counts[c.name] > 1 ? 's' : ''}</span></span></a>`).join('')}</div>
+  <div class="cats">${CATS.filter(c => counts[c.name]).map((c, i) => `<a class="cat" style="--i:${i}" href="/${c.slug}/"><span class="ico">${icon(c.icon)}</span><span><b>${esc(c.name)}</b><span>${counts[c.name]} place${counts[c.name] > 1 ? 's' : ''}</span></span></a>`).join('')}</div>
 </div></section>
 <section class="sec"><div class="wrap">
   <div class="sec-head"><div><p class="eyebrow" style="color:var(--teal-d)">${featured.length ? 'Featured' : 'Friday night, sorted'}</p><h2>${featured.length ? 'Featured local businesses' : 'Takeaways'}</h2></div><a href="/takeaways/">All takeaways</a></div>

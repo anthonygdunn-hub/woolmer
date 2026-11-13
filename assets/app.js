@@ -171,3 +171,42 @@
     window.addEventListener('appinstalled', function () { bar.hidden = true; });
   }
 })();
+
+/* ---------- Motion: scroll reveal and tile glow ---------- */
+(function () {
+  var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduce || !('IntersectionObserver' in window)) return;
+  var SEL = '.sec-head, .cat, .card, .panel, .why-card, .place-grid > *, .near-tools, .crumbs + h1 ~ p';
+  var io = new IntersectionObserver(function (ents) {
+    ents.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+  }, { rootMargin: '0px 0px -8% 0px', threshold: 0.08 });
+  function arm(root) {
+    var groups = new Map();
+    (root.querySelectorAll ? root : document).querySelectorAll(SEL).forEach(function (el) {
+      if (el.classList.contains('rv') || el.closest('.hero, .ph, .tabbar, .install')) return;
+      var parent = el.parentElement, n = groups.get(parent) || 0;
+      groups.set(parent, n + 1);
+      el.style.setProperty('--d', Math.min(n, 8));
+      el.classList.add('rv');
+      var r = el.getBoundingClientRect();
+      if (r.top < innerHeight * 0.92 && r.bottom > 0 && root === document) {
+        requestAnimationFrame(function () { requestAnimationFrame(function () { el.classList.add('in'); }); });
+      } else io.observe(el);
+    });
+  }
+  function start() {
+    arm(document);
+    // cards added later (search results, Near me, Saved)
+    new MutationObserver(function (ms) {
+      ms.forEach(function (m) { m.addedNodes.forEach(function (n) { if (n.nodeType === 1 && n.parentElement) arm(n.parentElement); }); });
+    }).observe(document.body, { childList: true, subtree: true });
+    document.addEventListener('pointermove', function (e) {
+      var c = e.target.closest && e.target.closest('.cat');
+      if (!c) return;
+      var r = c.getBoundingClientRect();
+      c.style.setProperty('--mx', (e.clientX - r.left) + 'px');
+      c.style.setProperty('--my', (e.clientY - r.top) + 'px');
+    }, { passive: true });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
+})();
