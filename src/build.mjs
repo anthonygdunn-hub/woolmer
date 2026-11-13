@@ -13,6 +13,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+let REV = false; // reviews switched on in admin settings
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = path.join(ROOT, '_site');
 const SITE = 'https://woolmer.info';
@@ -205,6 +206,7 @@ function build(data) {
   const places = data.places.map(p => ({ ...p, address_clean: cleanAddress(p) }));
   const stats = Object.fromEntries((data.stats || []).map(s => [s.id, s]));
   const settings = data.settings || {};
+  REV = settings.reviews_enabled === true;
   const files = {};
   const sitemap = ['/', '/search/', '/ask/', '/business/', '/guidelines/', '/terms/', '/privacy/'];
 
@@ -214,7 +216,7 @@ function build(data) {
   const showcase = (featured.length ? featured : places.filter(p => p.category === 'Takeaways')).sort(sortPlaces).slice(0, 8);
   files['index.html'] = page({
     title: 'woolmer — the Whitehill & Bordon guide',
-    desc: `Every takeaway, pub, café and shop in Whitehill & Bordon in one place: ${places.length} local businesses with food hygiene ratings, opening hours, menus and local reviews.`,
+    desc: `Every takeaway, pub, café and shop in Whitehill & Bordon in one place: ${places.length} local businesses with food hygiene ratings, opening hours${REV ? ', menus and local reviews' : ' and menus'}.`,
     path: '/',
     jsonld: { '@context': 'https://schema.org', '@type': 'WebSite', name: 'woolmer', url: SITE + '/', potentialAction: { '@type': 'SearchAction', target: SITE + '/search/?q={q}', 'query-input': 'required name=q' } },
     body: `<section class="hero dk"><div class="wrap">
@@ -233,7 +235,7 @@ function build(data) {
   <div class="grid">${showcase.map(p => card(p, stats[p.id])).join('')}</div>
 </div></section>
 <section class="sec" style="padding-top:0"><div class="wrap"><div class="panel panel-dk dk" style="display:flex;flex-wrap:wrap;gap:24px;align-items:center;justify-content:space-between">
-  <div style="flex:1 1 420px"><h2>Run a local business?</h2><p style="margin:8px 0 0">Your business is probably already here. Claim it free to add your menu, opening hours, photos and contact details, and reply to reviews.</p></div>
+  <div style="flex:1 1 420px"><h2>Run a local business?</h2><p style="margin:8px 0 0">Your business is probably already here. Claim it free to add your menu, opening hours, photos and contact details${REV ? ', and reply to reviews' : ''}.</p></div>
   <a class="btn btn-fountain" href="/business/">Claim your listing</a>
 </div></div></section>
 ${whyBlock}
@@ -249,7 +251,7 @@ ${signupBlock}`,
     sitemap.push(`/${c.slug}/`);
     files[`${c.slug}/index.html`] = page({
       title: `${c.name} in Whitehill & Bordon — woolmer`,
-      desc: `${list.length} ${c.name.toLowerCase()} in Whitehill, Bordon and nearby villages, with food hygiene ratings, opening hours and local reviews.`,
+      desc: `${list.length} ${c.name.toLowerCase()} in Whitehill, Bordon and nearby villages, with food hygiene ratings, opening hours${REV ? ' and local reviews' : ''}.`,
       path: `/${c.slug}/`,
       head: pins.length ? '<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">' : '',
       scripts: pins.length ? '<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin="" defer></script>' : '',
@@ -299,7 +301,7 @@ ${groups.map(([c, l]) => `<section class="sec" style="padding-bottom:0"><div cla
     const dirUrl = p.lat ? `https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lng}` : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.name + ' ' + addr)}`;
     files[`p/${p.slug}/index.html`] = page({
       title: `${p.name}, ${p.area || 'Bordon'} — ${c ? c.name : p.category} — woolmer`,
-      desc: p.description ? p.description.slice(0, 155) : (p.fhrs_id ? `${p.name} in ${p.area || 'Bordon'}${p.postcode ? ' (' + p.postcode + ')' : ''}: food hygiene rating ${/^[0-5]$/.test(p.hygiene_rating || '') ? p.hygiene_rating + ' out of 5' : 'pending'}, address, opening hours and local reviews.` : `${p.name}, ${p.category.toLowerCase()} in ${p.area || 'Bordon'}${p.postcode ? ' (' + p.postcode + ')' : ''}: address, phone, opening hours and local reviews.`),
+      desc: p.description ? p.description.slice(0, 155) : (p.fhrs_id ? `${p.name} in ${p.area || 'Bordon'}${p.postcode ? ' (' + p.postcode + ')' : ''}: food hygiene rating ${/^[0-5]$/.test(p.hygiene_rating || '') ? p.hygiene_rating + ' out of 5' : 'pending'}, address and opening hours${REV ? ', plus local reviews' : ''}.` : `${p.name}, ${p.category.toLowerCase()} in ${p.area || 'Bordon'}${p.postcode ? ' (' + p.postcode + ')' : ''}: address, phone and opening hours${REV ? ', plus local reviews' : ''}.`),
       path: `/p/${p.slug}/`,
       jsonld: ld,
       head: p.lat ? '<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">' : '',
@@ -328,7 +330,7 @@ ${groups.map(([c, l]) => `<section class="sec" style="padding-bottom:0"><div cla
     </div></div>
     ${p.lat ? `<div class="map" id="map" data-pins="${esc(JSON.stringify([{ n: p.name, s: p.slug, lat: p.lat, lng: p.lng }]))}" role="region" aria-label="Map showing ${esc(p.name)}"></div>` : ''}
     ${p.claimed ? `<p class="muted" style="font-size:13px;margin:0">This listing is managed by the business. Spotted something wrong? <button class="linkish" type="button" data-report="listing" data-id="${p.id}">Report it</button></p>`
-      : `<div class="panel panel-dk dk"><h2 style="font-size:24px">Is this your business?</h2><p>Claim it free to add your menu, opening hours, photos and phone number, and reply to reviews.</p><a class="btn btn-fountain" href="/claim/?p=${esc(p.slug)}">Claim this listing</a></div>`}
+      : `<div class="panel panel-dk dk"><h2 style="font-size:24px">Is this your business?</h2><p>Claim it free to add your menu, opening hours, photos and phone number${REV ? ', and reply to reviews' : ''}.</p><a class="btn btn-fountain" href="/claim/?p=${esc(p.slug)}">Claim this listing</a></div>`}
   </aside>
 </div></div></section>`,
     });
@@ -354,10 +356,10 @@ ${groups.map(([c, l]) => `<section class="sec" style="padding-bottom:0"><div cla
   // business
   const price = settings.featured_price_gbp ?? 20;
   files['business/index.html'] = page({
-    title: 'For local businesses — woolmer', desc: 'Claim your free woolmer listing: add your menu, opening hours and photos, reply to reviews, and get featured in front of Whitehill & Bordon.', path: '/business/',
+    title: 'For local businesses — woolmer', desc: `Claim your free woolmer listing: add your menu, opening hours and photos${REV ? ', reply to reviews' : ''}, and get featured in front of Whitehill & Bordon.`, path: '/business/',
     body: `<section class="ph dk"><div class="wrap"><h1>Your business, in front of the whole town</h1><p>woolmer lists every food business in Whitehill &amp; Bordon from the Food Standards Agency's public records. Claim yours to make it yours.</p></div></section>
 <section class="sec"><div class="wrap"><div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(280px,1fr))">
-  <div class="panel"><p class="eyebrow" style="color:var(--teal-d)">Free, forever</p><h2>Claim your listing</h2><ul style="padding-left:18px;margin:12px 0 20px"><li>Add your opening hours, phone and website</li><li>Put your full menu online</li><li>Reply to reviews and answer questions</li><li>Get the "Owner-verified" badge</li></ul><a class="btn btn-navy" href="/search/">Find your business</a><p class="muted" style="font-size:14px;margin:12px 0 0">Not listed? <a href="mailto:info@woolmer.info?subject=Add%20my%20business%20to%20woolmer">Email us</a> and we'll add you.</p></div>
+  <div class="panel"><p class="eyebrow" style="color:var(--teal-d)">Free, forever</p><h2>Claim your listing</h2><ul style="padding-left:18px;margin:12px 0 20px"><li>Add your opening hours, phone and website</li><li>Put your full menu online</li>${REV ? '<li>Reply to reviews and answer questions</li>' : ''}<li>Get the "Owner-verified" badge</li></ul><a class="btn btn-navy" href="/search/">Find your business</a><p class="muted" style="font-size:14px;margin:12px 0 0">Not listed? <a href="mailto:info@woolmer.info?subject=Add%20my%20business%20to%20woolmer">Email us</a> and we'll add you.</p></div>
   <div class="panel panel-dk dk" id="featured"><p class="eyebrow">£${esc(price)} a month</p><h2>Get featured</h2><ul style="padding-left:18px;margin:12px 0 20px;color:var(--od2)"><li>Top of your category, with a Featured badge</li><li>On the woolmer home page</li><li>Shared on woolmer's Facebook and Instagram</li><li>No contract, cancel any month</li></ul><a class="btn btn-fountain" href="mailto:info@woolmer.info?subject=Featured%20listing%20on%20woolmer">Ask about featuring</a></div>
 </div>
 <div class="panel" style="margin-top:20px"><h2>Need a proper website?</h2><p class="muted" style="margin:8px 0 16px">woolmer is built by <a href="https://dunnworks.io">Dunnworks</a>, a Bordon web designer. Hand-coded, fast websites for local businesses, from £750, with no monthly platform fee.</p><a class="btn btn-ghost" href="https://dunnworks.io">See Dunnworks</a></div>
