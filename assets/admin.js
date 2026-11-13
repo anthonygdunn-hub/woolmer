@@ -1,7 +1,7 @@
 /* woolmer admin — only works for info@dunnworks.io (database rules enforce it, this is just the screen) */
 (function () {
   var root = document.getElementById('adm'), WB = window.WB, esc = WB.esc, sb, tab = location.hash.slice(1) || 'claims';
-  var TABS = [['claims', 'Claims'], ['mod', 'Moderation'], ['reports', 'Reports'], ['featured', 'Featured'], ['places', 'Listings'], ['signups', 'Sign-ups'], ['stats', 'Visitors'], ['settings', 'Settings']];
+  var TABS = [['claims', 'Claims'], ['mod', 'Moderation'], ['reports', 'Reports'], ['featured', 'Featured'], ['places', 'Listings'], ['signups', 'Sign-ups'], ['stats', 'Visitors'], ['alerts', 'Alerts'], ['settings', 'Settings']];
   function when(d) { return d ? new Date(d).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''; }
   function err(e) { alert(String(e && e.message || e)); }
   function chk(r) { if (r.error) throw r.error; return r.data; }
@@ -44,7 +44,7 @@
         '<div class="tabs">' + TABS.map(function (t) { return '<button data-t="' + t[0] + '"' + (t[0] === tab ? ' class="on"' : '') + '>' + t[1] + (n[t[0]] ? '<span class="cnt">' + n[t[0]] + '</span>' : '') + '</button>'; }).join('') + '</div><div id="pane"></div>';
       document.getElementById('so').onclick = function () { sb.auth.signOut().then(function () { location.reload(); }); };
       root.querySelectorAll('[data-t]').forEach(function (b) { b.onclick = function () { tab = b.dataset.t; location.hash = tab; shell(); }; });
-      ({ claims: claims, mod: mod, reports: reports, featured: featured, places: places, signups: signups, stats: stats, settings: settings })[tab]();
+      ({ claims: claims, mod: mod, reports: reports, featured: featured, places: places, signups: signups, stats: stats, alerts: alerts, settings: settings })[tab]();
     });
   }
   function pane(h) { document.getElementById('pane').innerHTML = h; }
@@ -163,6 +163,40 @@
         '<div class="item"><strong>Today ' + sum(function (x) { return x.day === today; }) + ' · last 7 days ' + sum(function (x) { return x.day >= wk; }) + ' · last 30 days ' + sum(function () { return true; }) + '</strong>' +
         '<div style="display:flex;align-items:flex-end;gap:2px;height:80px;margin-top:.75em">' + days.map(function (d) { return '<div title="' + d[0] + ': ' + d[1] + '" style="flex:1;background:#1f3a5f;min-height:2px;height:' + Math.round(d[1] / max * 100) + '%"></div>'; }).join('') + '</div></div>' +
         list('Top pages, 30 days', tally('path'), true) + list('Where visitors came from', tally('ref', function (x) { return x.ref; })));
+    });
+  }
+
+  // ------------------------------------------------ app alerts
+  function alerts() {
+    sb.from('wb_push_subs').select('id,created_at', { count: 'exact', head: true }).then(function (r) {
+      var n = r.count || 0;
+      pane('<p class="muted">' + n + ' phone' + (n === 1 ? '' : 's') + ' have turned alerts on in the woolmer app. Keep it to one or two a week, or people turn them off.</p>' +
+        '<form class="form item" id="al"><label>Title (up to 60 characters)<input name="title" maxlength="60" required placeholder="New on woolmer"></label>' +
+        '<label>Message (up to 180 characters)<textarea name="body" maxlength="180" rows="3" required placeholder="Tap @ the Shed has live music this Saturday from 8pm."></textarea></label>' +
+        '<label>Opens this page when tapped<input name="url" value="/" placeholder="/p/tap-at-the-shed/"></label>' +
+        '<div class="acts"><button class="btn btn-ghost btn-sm" type="button" id="al-test">Send to this phone only</button><button class="btn btn-navy btn-sm" type="submit">Send to everyone</button></div>' +
+        '<p class="meta" id="al-msg" role="status"></p></form>');
+      var f = document.getElementById('al'), msg = document.getElementById('al-msg');
+      var send = function (kind, endpoint) {
+        msg.textContent = 'Sending…';
+        return sb.functions.invoke('wb-push', { body: { kind: kind, title: f.title.value, body: f.body.value, url: f.url.value.trim() || '/', endpoint: endpoint } }).then(function (res) {
+          if (res.error) throw res.error;
+          var d = res.data || {}; msg.textContent = 'Sent to ' + (d.sent || 0) + ' phone' + (d.sent === 1 ? '' : 's') + (d.removed ? ', removed ' + d.removed + ' that had turned alerts off' : '') + (d.failed ? ', ' + d.failed + ' failed' : '') + '.';
+        }).catch(function (e) { msg.textContent = ''; err(e); });
+      };
+      document.getElementById('al-test').onclick = function () {
+        if (!f.reportValidity()) return;
+        if (!('serviceWorker' in navigator)) return err('Open admin in the woolmer app on your phone to test.');
+        navigator.serviceWorker.ready.then(function (reg) { return reg.pushManager.getSubscription(); }).then(function (s) {
+          if (!s) return err('Turn alerts on for this phone first: Saved tab, then Turn alerts on.');
+          send('test', s.endpoint);
+        });
+      };
+      f.onsubmit = function (e) {
+        e.preventDefault();
+        if (!confirm('Send this alert to ' + n + ' phone' + (n === 1 ? '' : 's') + '?')) return;
+        send('send');
+      };
     });
   }
 

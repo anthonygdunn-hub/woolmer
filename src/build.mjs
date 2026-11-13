@@ -100,6 +100,15 @@ const fsaBadge = p => {
 };
 
 // ------------------------------------------------------------------ layout
+const TABS = [['Home', '/', 'home'], ['Near me', '/near/', 'pin'], ['Search', '/search/', 'search'], ['Saved', '/saved/', 'heart'], ['Account', '/account/', 'user']];
+const ic = (d) => `<svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+const TAB_ICONS = {
+  home: ic('<path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/>'),
+  pin: ic('<path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>'),
+  search: ic('<circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/>'),
+  heart: ic('<path d="M12 20s-7.5-4.6-7.5-10A4.3 4.3 0 0 1 12 7.3 4.3 4.3 0 0 1 19.5 10c0 5.4-7.5 10-7.5 10z"/>'),
+  user: ic('<circle cx="12" cy="8.5" r="3.5"/><path d="M5 20c1.2-3.6 4-5.5 7-5.5s5.8 1.9 7 5.5"/>'),
+};
 const NAV = [['Takeaways', '/takeaways/'], ['Pubs & bars', '/pubs-and-bars/'], ['Cafés', '/cafes-and-restaurants/'], ['Shops', '/shops/'], ['Ask the town', '/ask/'], ['For businesses', '/business/']];
 function page({ title, desc, path: p, body, head = '', scripts = '', noindex = false, jsonld = null }) {
   const url = SITE + p;
@@ -107,7 +116,7 @@ function page({ title, desc, path: p, body, head = '', scripts = '', noindex = f
 <html lang="en-GB">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>${esc(title)}</title>
 <meta name="description" content="${esc(desc)}">
 <link rel="canonical" href="${url}">
@@ -119,6 +128,12 @@ ${noindex ? '<meta name="robots" content="noindex">' : ''}
 <meta property="og:image" content="${SITE}/assets/og.png">
 <meta name="theme-color" content="#0C243C">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="woolmer">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -157,7 +172,10 @@ ${body}
   </div>
 </footer>
 <script>window.WB={url:${JSON.stringify(SB_URL)},key:${JSON.stringify(SB_KEY)}};</script>
+<div class="install" id="install" hidden><span class="ico">${TREE(22)}</span><p>Get the free woolmer app on your phone.</p><button class="btn btn-fountain btn-sm" type="button" data-install hidden>Install</button><button class="x" type="button" data-close aria-label="Not now">×</button></div>
+<nav class="tabbar" aria-label="App">${TABS.map(([t, h, ic]) => `<a href="${h}"${(h === '/' ? p === '/' : p.startsWith(h)) ? ' aria-current="page"' : ''}>${TAB_ICONS[ic]}<span>${t}</span></a>`).join('')}</nav>
 <script src="/assets/site.js" defer></script>
+<script src="/assets/app.js" defer></script>
 ${scripts}
 </body>
 </html>`;
@@ -224,7 +242,7 @@ function build(data) {
   <h1>Everything local, finally in <span>one place.</span></h1>
   <p class="lead">${places.length} local takeaways, pubs, cafés and shops, with maps, food hygiene ratings, opening hours and menus${REV ? ', and answers from people who live here' : ''}.</p>
   <form class="search" action="/search/" role="search"><label class="sr" for="q">Search woolmer</label><input id="q" name="q" type="search" placeholder="Try &quot;chippy&quot;, &quot;pub Headley&quot; or &quot;Lidl&quot;"><button class="btn btn-fountain" type="submit">Search</button></form>
-  <div class="chips">${CATS.slice(0, 5).map(c => `<a class="chip" href="/${c.slug}/">${esc(c.name)}</a>`).join('')}</div>
+  <div class="chips"><a class="chip" href="/near/">📍 Near me</a>${CATS.slice(0, 5).map(c => `<a class="chip" href="/${c.slug}/">${esc(c.name)}</a>`).join('')}</div>
 </div></section>
 <section class="sec sec-band"><div class="wrap">
   <div class="sec-head"><h2>What are you after?</h2><a href="/search/">Search everything</a></div>
@@ -311,7 +329,7 @@ ${groups.map(([c, l]) => `<section class="sec" style="padding-bottom:0"><div cla
   <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">${isFeatured(p) ? '<span class="badge badge-f">Featured</span>' : ''}${p.claimed ? '<span class="badge badge-v">Owner-verified listing</span>' : ''}<span id="open-now"></span></div>
   <h1>${esc(p.name)}</h1>
   <p>${esc([c ? c.name : p.category, addr].filter(Boolean).join(' · '))}</p>
-  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:20px">${p.phone ? `<a class="btn btn-fountain" href="tel:${esc(p.phone.replace(/\s+/g, ''))}">Call ${esc(p.phone)}</a>` : ''}<a class="btn btn-line" href="${esc(dirUrl)}" rel="noopener">Directions</a>${p.website ? `<a class="btn btn-line" href="${esc(p.website)}" rel="noopener nofollow">Website</a>` : ''}</div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:20px">${p.phone ? `<a class="btn btn-fountain" href="tel:${esc(p.phone.replace(/\s+/g, ''))}">Call ${esc(p.phone)}</a>` : ''}<a class="btn btn-line" href="${esc(dirUrl)}" rel="noopener">Directions</a><button class="btn btn-line" type="button" data-save="${esc(p.slug)}" aria-pressed="false">♡ Save</button>${p.website ? `<a class="btn btn-line" href="${esc(p.website)}" rel="noopener nofollow">Website</a>` : ''}</div>
 </div></section>
 <section class="sec" style="padding-top:28px"><div class="wrap"><div class="place-grid" id="place" data-id="${p.id}" data-slug="${esc(p.slug)}" data-name="${esc(p.name)}" ${hours ? `data-hours='${esc(JSON.stringify(hours))}'` : ''}>
   <div class="place-main">
@@ -343,7 +361,7 @@ ${groups.map(([c, l]) => `<section class="sec" style="padding-bottom:0"><div cla
     body: `<section class="ph dk"><div class="wrap"><h1>Search</h1><form class="search" role="search" style="margin-top:20px" id="s-form"><label class="sr" for="s-q">Search woolmer</label><input id="s-q" name="q" type="search" placeholder="Name, type of food or village" autocomplete="off"><button class="btn btn-fountain" type="submit">Search</button></form></div></section>
 <section class="sec" style="padding-top:28px"><div class="wrap"><p class="muted" id="s-count" aria-live="polite"></p><div class="grid" id="s-results"></div></div></section>`,
   });
-  files['places.json'] = JSON.stringify(places.map(p => ({ s: p.slug, n: p.name, c: p.category, a: p.area || '', t: (p.tags || []).join(' '), d: (p.description || '').slice(0, 160), h: p.hygiene_rating, f: isFeatured(p) ? 1 : 0, v: p.claimed ? 1 : 0 })));
+  files['places.json'] = JSON.stringify(places.map(p => ({ s: p.slug, n: p.name, c: p.category, a: p.area || '', t: (p.tags || []).join(' '), d: (p.description || '').slice(0, 160), h: p.hygiene_rating, f: isFeatured(p) ? 1 : 0, v: p.claimed ? 1 : 0, la: p.lat ? +(+p.lat).toFixed(5) : undefined, lo: p.lng ? +(+p.lng).toFixed(5) : undefined, o: p.hours && Object.values(p.hours).some(v => v && !/closed/i.test(v)) ? p.hours : undefined })));
 
   // ask the town
   files['ask/index.html'] = page({
@@ -388,6 +406,44 @@ ${groups.map(([c, l]) => `<section class="sec" style="padding-bottom:0"><div cla
   }
 
   files['404.html'] = page({ title: 'Not found — woolmer', desc: 'Page not found', path: '/404', noindex: true, body: `<section class="ph dk"><div class="wrap"><h1>Lost in the forest</h1><p>That page isn't here. <a href="/" style="color:var(--fountain)">Head home</a> or <a href="/search/" style="color:var(--fountain)">search</a>.</p></div></section>` });
+  // ---------------------------------------------------------------- app pages
+  files['near/index.html'] = page({
+    title: 'Near me — woolmer', desc: 'Takeaways, pubs, cafés and shops in Whitehill & Bordon, nearest first, and what\'s open right now.', path: '/near/',
+    body: `<section class="ph dk"><div class="wrap"><h1>Near me</h1><p>Sorted by distance from where you are. Your location stays on your phone.</p>
+  <div class="near-tools" id="near"><button class="btn btn-fountain btn-sm" type="button" id="near-locate">Use my location</button><button class="chip-t" type="button" id="near-open" aria-pressed="false">Open now</button><label class="sr" for="near-cat">Type of place</label><select id="near-cat"><option value="">Everything</option></select></div></div></section>
+<section class="sec" style="padding-top:24px"><div class="wrap"><p class="muted" id="near-note" aria-live="polite">Loading places…</p><div class="grid" id="near-list"></div></div></section>`,
+  });
+  sitemap.push('/near/');
+  files['saved/index.html'] = page({
+    title: 'Saved — woolmer', desc: 'Your saved places on woolmer.', path: '/saved/', noindex: true,
+    body: `<section class="ph dk"><div class="wrap"><h1>Saved</h1><p>Places you've saved. They stay on this phone, and work without signal.</p></div></section>
+<section class="sec" style="padding-top:24px"><div class="wrap"><div class="grid" id="saved-list"></div>
+<div class="panel" id="alerts" style="margin-top:28px;max-width:640px"><h2 style="font-size:22px">Local alerts</h2><p class="muted" style="margin:8px 0 14px">The odd alert worth having: new places opening, local events and offers from Whitehill &amp; Bordon businesses. No more than one or two a week.</p><button class="btn btn-navy btn-sm" type="button">Turn alerts on</button><p class="msg" role="status" aria-live="polite" style="margin:10px 0 0"></p></div>
+</div></section>`,
+  });
+  files['offline/index.html'] = page({
+    title: 'Offline — woolmer', desc: 'You are offline.', path: '/offline/', noindex: true,
+    body: `<section class="ph dk"><div class="wrap"><h1>No signal right now</h1><p>Pages you've opened before and your <a href="/saved/" style="color:#fff">saved places</a> still work. Everything else will be back when you're online.</p></div></section>`,
+  });
+  files['manifest.webmanifest'] = JSON.stringify({
+    name: 'woolmer: the Whitehill & Bordon guide', short_name: 'woolmer',
+    description: 'Every takeaway, pub, café, shop and service in Whitehill, Bordon, Lindford and Headley, with what\'s open now and what\'s near you.',
+    id: '/', start_url: '/?source=app', scope: '/', display: 'standalone', orientation: 'portrait',
+    background_color: '#F5F7F8', theme_color: '#0C243C', categories: ['food', 'lifestyle', 'shopping', 'travel'],
+    icons: [
+      { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+      { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+      { src: '/icons/maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+    ],
+    shortcuts: [
+      { name: 'Open now', url: '/near/?open=1', icons: [{ src: '/icons/icon-192.png', sizes: '192x192' }] },
+      { name: 'Near me', url: '/near/', icons: [{ src: '/icons/icon-192.png', sizes: '192x192' }] },
+      { name: 'Takeaways', url: '/takeaways/', icons: [{ src: '/icons/icon-192.png', sizes: '192x192' }] },
+      { name: 'Saved', url: '/saved/', icons: [{ src: '/icons/icon-192.png', sizes: '192x192' }] },
+    ],
+  }, null, 2);
+  files['sw.js'] = fs.readFileSync(path.join(ROOT, 'src/sw.template.js'), 'utf8').replace('__VERSION__', new Date().toISOString().replace(/\D/g, '').slice(0, 12));
+
   // old café URL from before accents were handled
   files['caf-s-and-restaurants/index.html'] = `<!doctype html><html lang="en-GB"><head><meta charset="utf-8"><title>Cafés & restaurants — woolmer</title><meta name="robots" content="noindex"><link rel="canonical" href="${SITE}/cafes-and-restaurants/"><meta http-equiv="refresh" content="0;url=/cafes-and-restaurants/"></head><body><p><a href="/cafes-and-restaurants/">Cafés & restaurants</a></p></body></html>\n`;
   files['sitemap.xml'] = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${sitemap.map(u => `<url><loc>${SITE}${u}</loc></url>`).join('')}</urlset>\n`;
@@ -406,7 +462,7 @@ for (const [f, c] of Object.entries(files)) {
   fs.mkdirSync(path.dirname(p), { recursive: true });
   fs.writeFileSync(p, c);
 }
-for (const d of ['assets', 'admin']) fs.cpSync(path.join(ROOT, d), path.join(OUT, d), { recursive: true });
+for (const d of ['assets', 'admin', 'icons']) fs.cpSync(path.join(ROOT, d), path.join(OUT, d), { recursive: true });
 for (const f of ['favicon.svg']) fs.copyFileSync(path.join(ROOT, f), path.join(OUT, f));
 fs.copyFileSync(path.join(ROOT, 'privacy.html'), path.join(OUT, 'privacy.html'));
 console.log(`Built ${Object.keys(files).length} files for ${data.places.length} places${FIXTURE ? ' (fixture)' : ''}`);

@@ -1,0 +1,173 @@
+/* woolmer — the phone app: offline worker, install prompt, saved places, Near me, Open now and alerts.
+ * Saved places stay on the phone (localStorage). Location is only used on the phone to sort by distance. */
+(function () {
+  var WB = window.WB = window.WB || {};
+  var VAPID = 'BJI3fhP1miK3DBMdP2qC7aJ7xBB-ZYVwo2wm8K4NGIKTGxlu77ohIvKMt61cw2G3mr_OS1kl2DoflZI6TtqoYlU';
+  var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+  var store = {
+    get: function (k, d) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
+    set: function (k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+  };
+  var standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+  if (standalone) document.documentElement.classList.add('is-app');
+
+  // ---------------------------------------------------------------- offline worker
+  if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+    window.addEventListener('load', function () { navigator.serviceWorker.register('/sw.js').catch(function () {}); });
+  }
+
+  // ---------------------------------------------------------------- open now (same rules as listing pages)
+  var DAYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+  var toMin = function (t) { var p = String(t).trim().split(':'); return +p[0] * 60 + (+p[1] || 0); };
+  WB.openNow = function (hours, when) {
+    if (!hours) return null;
+    var now = when || new Date(), d = DAYS[now.getDay()], y = DAYS[(now.getDay() + 6) % 7], m = now.getHours() * 60 + now.getMinutes();
+    var on = function (day, prev) {
+      var v = String(hours[day] || ''); if (!v || /closed/i.test(v)) return false;
+      return v.split(',').some(function (r) {
+        var x = r.trim().split('-'); if (x.length < 2) return false;
+        var a = toMin(x[0]), b = toMin(x[1]); if (b <= a) b += 1440;
+        return prev ? (m + 1440 >= a && m + 1440 < b) : (m >= a && m < b);
+      });
+    };
+    return on(d) || on(y, true);
+  };
+
+  // ---------------------------------------------------------------- saved places
+  WB.saved = function () { return store.get('wb_saved', []); };
+  WB.isSaved = function (slug) { return WB.saved().indexOf(slug) > -1; };
+  WB.toggleSaved = function (slug) {
+    var s = WB.saved(), i = s.indexOf(slug);
+    if (i > -1) s.splice(i, 1); else s.unshift(slug);
+    store.set('wb_saved', s.slice(0, 200)); return i === -1;
+  };
+  var paintSave = function (b) {
+    var on = WB.isSaved(b.dataset.save);
+    b.setAttribute('aria-pressed', String(on));
+    b.innerHTML = (on ? '♥ Saved' : '♡ Save');
+  };
+  document.querySelectorAll('[data-save]').forEach(function (b) {
+    paintSave(b);
+    b.addEventListener('click', function () { WB.toggleSaved(b.dataset.save); paintSave(b); });
+  });
+
+  // ---------------------------------------------------------------- places data and cards
+  var placesP = null;
+  WB.places = function () { return placesP || (placesP = fetch('/places.json').then(function (r) { return r.json(); })); };
+  var miles = function (a, b) {
+    var R = 3958.8, r = Math.PI / 180, dLa = (b.la - a.la) * r, dLo = (b.lo - a.lo) * r;
+    var x = Math.sin(dLa / 2) * Math.sin(dLa / 2) + Math.cos(a.la * r) * Math.cos(b.la * r) * Math.sin(dLo / 2) * Math.sin(dLo / 2);
+    return 2 * R * Math.asin(Math.sqrt(x));
+  };
+  WB.appCard = function (p, dist) {
+    var open = WB.openNow(p.o);
+    var bits = [p.c, p.a].filter(Boolean).join(' · ');
+    return '<a class="card" href="/p/' + esc(p.s) + '/"><div class="art"><span class="initial" aria-hidden="true">' + esc(p.n.replace(/^the\s+/i, '')[0] || '') + '</span>' +
+      (p.f ? '<span class="badge badge-f">Featured</span>' : p.v ? '<span class="badge badge-v">Owner-verified</span>' : '') + '</div><div class="body"><h3>' + esc(p.n) + '</h3><span class="meta">' + esc(bits) + '</span>' +
+      '<div class="tags">' + (open === true ? '<span class="open-now">Open now</span>' : open === false ? '<span class="closed-now">Closed now</span>' : '') +
+      (dist != null ? '<span class="tag">' + (dist < 0.1 ? 'Under 0.1 mi' : dist.toFixed(1) + ' mi') + '</span>' : '') +
+      (/^[0-5]$/.test(p.h || '') ? '<span class="fsa"><i class="' + (+p.h <= 2 ? 'lo' : '') + '">' + p.h + '</i>Food hygiene</span>' : '') + '</div></div></a>';
+  };
+
+  // ---------------------------------------------------------------- Near me page
+  var near = document.getElementById('near');
+  if (near) {
+    var out = document.getElementById('near-list'), note = document.getElementById('near-note'), cat = document.getElementById('near-cat');
+    var openOnly = new URLSearchParams(location.search).get('open') === '1', here = store.get('wb_here', null), data = [];
+    var chip = document.getElementById('near-open');
+    var paint = function () {
+      chip.setAttribute('aria-pressed', String(openOnly));
+      var list = data.filter(function (p) { return !cat.value || p.c === cat.value; });
+      if (openOnly) list = list.filter(function (p) { return WB.openNow(p.o) === true; });
+      var rows = list.map(function (p) { return { p: p, d: here && p.la ? miles(here, p) : null }; });
+      rows.sort(function (a, b) { return here ? ((a.d == null) - (b.d == null) || a.d - b.d) : (b.p.f - a.p.f || a.p.n.localeCompare(b.p.n)); });
+      out.innerHTML = rows.slice(0, 80).map(function (r) { return WB.appCard(r.p, r.d); }).join('');
+      var withHours = data.filter(function (p) { return p.o; }).length, hrs = withHours === 1 ? '1 place has' : withHours + ' places have';
+      note.textContent = openOnly
+        ? (rows.length ? rows.length + ' open right now. Only ' + hrs + ' told us their hours so far, so others may be open too.' : 'Nothing with known hours is open right now. Only ' + hrs + ' told us their hours so far.')
+        : rows.length + ' places' + (here ? ', nearest first' : '') + '.';
+    };
+    var locate = document.getElementById('near-locate');
+    locate.addEventListener('click', function () {
+      if (!navigator.geolocation) { note.textContent = 'This phone can\'t share its location.'; return; }
+      locate.disabled = true; locate.textContent = 'Finding you…';
+      navigator.geolocation.getCurrentPosition(function (pos) {
+        here = { la: pos.coords.latitude, lo: pos.coords.longitude, t: Date.now() }; store.set('wb_here', here);
+        locate.disabled = false; locate.textContent = 'Update my location'; paint();
+      }, function () {
+        locate.disabled = false; locate.textContent = 'Use my location';
+        note.textContent = 'Location is off for woolmer. Turn it on in your phone\'s settings to sort by distance.';
+      }, { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 });
+    });
+    if (here && Date.now() - here.t > 3 * 3600e3) here = null;   // forget an old position
+    if (here) locate.textContent = 'Update my location';
+    chip.addEventListener('click', function () { openOnly = !openOnly; history.replaceState(null, '', openOnly ? '?open=1' : location.pathname); paint(); });
+    cat.addEventListener('change', paint);
+    WB.places().then(function (d) {
+      data = d;
+      var cats = {}; d.forEach(function (p) { cats[p.c] = 1; });
+      cat.innerHTML = '<option value="">Everything</option>' + Object.keys(cats).sort().map(function (c) { return '<option>' + esc(c) + '</option>'; }).join('');
+      paint();
+    });
+  }
+
+  // ---------------------------------------------------------------- Saved page
+  var savedEl = document.getElementById('saved-list');
+  if (savedEl) {
+    WB.places().then(function (d) {
+      var by = {}; d.forEach(function (p) { by[p.s] = p; });
+      var list = WB.saved().map(function (s) { return by[s]; }).filter(Boolean);
+      savedEl.innerHTML = list.length ? list.map(function (p) { return WB.appCard(p); }).join('')
+        : '<div class="panel" style="grid-column:1/-1"><h2 style="font-size:22px">Nothing saved yet</h2><p class="muted" style="margin:8px 0 0">Tap ♡ Save on any place and it\'ll be here, even when you\'ve got no signal.</p></div>';
+    });
+  }
+
+  // ---------------------------------------------------------------- alerts
+  var alertsEl = document.getElementById('alerts');
+  if (alertsEl) {
+    var btn = alertsEl.querySelector('button'), msg = alertsEl.querySelector('.msg');
+    var b64 = function (s) { s = (s + '===='.slice((s.length % 4) || 4)).replace(/-/g, '+').replace(/_/g, '/'); var r = atob(s), a = new Uint8Array(r.length); for (var i = 0; i < r.length; i++) a[i] = r.charCodeAt(i); return a; };
+    var ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    var supported = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+    var set = function (on) { btn.textContent = on ? 'Turn alerts off' : 'Turn alerts on'; btn.dataset.on = on ? '1' : ''; };
+    if (!supported) {
+      btn.hidden = true;
+      msg.textContent = ios && !standalone ? 'On iPhone, add woolmer to your Home Screen first (Share, then Add to Home Screen), then open it from there to turn alerts on.' : 'This browser can\'t show alerts.';
+    } else {
+      navigator.serviceWorker.ready.then(function (reg) { return reg.pushManager.getSubscription(); }).then(function (s) { set(!!s); });
+      btn.addEventListener('click', function () {
+        btn.disabled = true; msg.textContent = '';
+        navigator.serviceWorker.ready.then(function (reg) {
+          return reg.pushManager.getSubscription().then(function (sub) {
+            if (btn.dataset.on && sub) {
+              return WB.rest('rpc/wb_push_unsubscribe', { method: 'POST', body: { p_endpoint: sub.endpoint } }).catch(function () {})
+                .then(function () { return sub.unsubscribe(); }).then(function () { set(false); msg.textContent = 'Alerts are off.'; });
+            }
+            return Notification.requestPermission().then(function (perm) {
+              if (perm !== 'granted') { msg.textContent = 'Alerts are blocked for woolmer. You can allow them in your phone\'s settings.'; return; }
+              return reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64(VAPID) }).then(function (s) {
+                var j = s.toJSON();
+                return WB.rest('rpc/wb_push_subscribe', { method: 'POST', body: { p_endpoint: j.endpoint, p_p256dh: j.keys.p256dh, p_auth: j.keys.auth } })
+                  .then(function () { set(true); msg.textContent = 'Alerts are on. We\'ll only send the odd one that\'s worth it.'; });
+              });
+            });
+          });
+        }).catch(function () { msg.textContent = 'That didn\'t work. Please try again.'; }).then(function () { btn.disabled = false; });
+      });
+    }
+  }
+
+  // ---------------------------------------------------------------- install prompt
+  var bar = document.getElementById('install');
+  if (bar && !standalone && !store.get('wb_install_hide', 0)) {
+    var text = bar.querySelector('p'), go = bar.querySelector('[data-install]'), deferred = null;
+    var show = function () { bar.hidden = false; };
+    window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); deferred = e; go.hidden = false; show(); });
+    if (/iphone|ipad|ipod/i.test(navigator.userAgent) && /safari/i.test(navigator.userAgent) && !/crios|fxios/i.test(navigator.userAgent)) {
+      text.innerHTML = 'Get the woolmer app: tap <b>Share</b>, then <b>Add to Home Screen</b>.'; go.hidden = true; show();
+    }
+    go.addEventListener('click', function () { if (!deferred) return; deferred.prompt(); deferred.userChoice.then(function () { bar.hidden = true; deferred = null; }); });
+    bar.querySelector('[data-close]').addEventListener('click', function () { bar.hidden = true; store.set('wb_install_hide', Date.now()); });
+    window.addEventListener('appinstalled', function () { bar.hidden = true; });
+  }
+})();

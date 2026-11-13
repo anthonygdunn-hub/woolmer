@@ -173,3 +173,27 @@ button.chip{font:inherit;font-size:13px;cursor:pointer}
   .sec-head h2,.why-l h2{font-size:30px}
   .why-l,.why-r,.panel{padding:22px}
 }
+
+/* ---------------------------------------------------------------- app */
+.btn-line[aria-pressed="true"]{background:var(--orange);border-color:var(--orange);color:var(--navy)}
+.near-tools{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:18px}
+.near-tools select{font:inherit;font-size:14px;padding:8px 12px;border-radius:999px;border:1px solid var(--line-d);background:var(--navy2);color:#fff}
+.chip-t{font:inherit;font-size:14px;font-weight:600;padding:8px 14px;border-radius:999px;border:1px solid var(--line-d);background:transparent;color:#fff;cursor:pointer}
+.chip-t[aria-pressed="true"]{background:var(--fountain);border-color:var(--fountain);color:var(--navy)}
+.card .tags .open-now,.card .tags .closed-now{font-size:11px;padding:3px 9px}
+.install{position:fixed;left:12px;right:12px;bottom:calc(76px + env(safe-area-inset-bottom));z-index:60;display:flex;align-items:center;gap:10px;background:var(--navy);color:#fff;border-radius:16px;padding:10px 10px 10px 14px;box-shadow:0 10px 30px rgba(7,23,42,.35);max-width:520px;margin:0 auto}
+.install[hidden]{display:none}
+.install p{margin:0;font-size:14px;flex:1;line-height:1.35}
+.install .ico{display:flex}
+.install .x{background:none;border:0;color:var(--tiara);font-size:24px;line-height:1;padding:4px 8px;cursor:pointer}
+.tabbar{display:none}
+@media (max-width:640px){
+  .tabbar{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:50;background:var(--card);border-top:1px solid var(--ln);padding:6px 4px calc(6px + env(safe-area-inset-bottom))}
+  .tabbar a{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;text-decoration:none;color:var(--mu);font-size:11px;font-weight:600;padding:4px 0}
+  .tabbar a[aria-current="page"]{color:var(--orange-l)}
+  body{padding-bottom:calc(64px + env(safe-area-inset-bottom))}
+}
+@media (min-width:641px){.install{bottom:20px}}
+/* installed app: no browser chrome, so tidy the header */
+.is-app .site-h{padding-top:env(safe-area-inset-top)}
+@media (max-width:640px){.is-app .h-actions .btn-navy{display:none}}
