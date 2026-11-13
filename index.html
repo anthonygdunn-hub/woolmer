@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>woolmer — the Whitehill &amp; Bordon guide, coming soon</title>
+<meta name="description" content="woolmer is a new independent guide to Whitehill & Bordon: every shop, takeaway, pub, club and pitch, with menus, opening hours, honest local reviews and answers from people who live here. Coming soon.">
+<link rel="canonical" href="https://woolmer.info/">
+<meta property="og:title" content="woolmer — the Whitehill & Bordon guide">
+<meta property="og:description" content="Everything local in Whitehill & Bordon, finally in one place. Coming soon.">
+<meta property="og:url" content="https://woolmer.info/">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#0C243C">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--navy:#0C243C;--navy2:#12304F;--navy3:#1B3550;--line-d:#2D4762;--deep:#07172A;--tiara:#C9D1D5;--page:#F5F7F8;--card:#FFFFFF;--ln:#DDE2E5;
+  --ink:#0C243C;--mu:#4F5E6E;--od2:#B9C4CF;--fountain:#55C2C3;--soft:#D7F0F0;--orange:#FF862F;--orange-l:#C4550F}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;font-family:Inter,system-ui,sans-serif;color:var(--ink);background:var(--page);line-height:1.6;-webkit-font-smoothing:antialiased}
+a{color:inherit}
+h1,h2{font-family:'Inter Tight',sans-serif;font-weight:400;margin:0;color:var(--orange-l)}
+.dk h1,.dk h2{color:var(--orange)}
+.wrap{max-width:1200px;margin:0 auto;padding:0 32px}
+header{background:var(--card);border-bottom:1px solid var(--ln)}
+header .wrap{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-top:14px;padding-bottom:14px;flex-wrap:wrap}
+.logo{display:flex;align-items:center;gap:8px;text-decoration:none}
+.logo b{font-family:'Inter Tight',sans-serif;font-size:26px;font-weight:500;letter-spacing:-.8px}
+.logo small{font-size:12px;color:var(--mu);border-left:1px solid var(--tiara);padding-left:10px;margin-left:4px}
+.btn{display:inline-flex;align-items:center;gap:10px;padding:13px 22px;border-radius:999px;font-weight:600;font-size:15px;text-decoration:none;border:0;cursor:pointer}
+.btn-navy{background:var(--navy2);color:#fff}
+.btn-fountain{background:var(--fountain);color:var(--navy)}
+.btn-line{border:1px solid var(--line-d);color:#fff}
+.hero{background:var(--navy);color:#fff;overflow:hidden}
+.hero .wrap{padding-top:96px;padding-bottom:104px;display:flex;flex-wrap:wrap;gap:56px;align-items:center}
+.hero-copy{flex:1 1 520px;min-width:0}
+.eyebrow{margin:0 0 20px;font-size:14px;color:var(--fountain);font-weight:500;letter-spacing:.4px}
+.hero h1{font-size:72px;line-height:1.02;letter-spacing:-2px}
+.hero h1 span{color:var(--fountain)}
+.lead{margin:24px 0 32px;font-size:18px;line-height:1.5;color:var(--od2);max-width:500px}
+.soon{display:inline-flex;align-items:center;gap:10px;font-size:13px;font-weight:600;color:var(--navy);background:var(--soft);padding:6px 12px;border-radius:999px;margin-bottom:22px}
+.soon i{width:8px;height:8px;border-radius:50%;background:var(--orange)}
+.ctas{display:flex;gap:10px;flex-wrap:wrap}
+.hero-art{flex:1 1 380px;min-width:0;display:flex;justify-content:center}
+.hero-art svg{width:min(360px,80%);height:auto}
+.band{background:var(--tiara)}
+.band .wrap{padding-top:72px;padding-bottom:72px}
+.band h2{font-size:40px;letter-spacing:-1px;margin-bottom:28px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
+.tile{background:var(--card);border:1px solid var(--ln);border-radius:18px;padding:22px}
+.tile b{display:block;font-size:17px;margin:14px 0 4px}
+.tile p{margin:0;font-size:14px;color:var(--mu)}
+.ico{width:42px;height:42px;border-radius:12px;background:var(--navy2);display:flex;align-items:center;justify-content:center}
+.why{padding:80px 0}
+.why-card{background:var(--card);border:1px solid var(--ln);border-radius:26px;overflow:hidden;display:flex;flex-wrap:wrap}
+.why-l{flex:1 1 380px;min-width:0;background:var(--navy2);color:#fff;padding:48px;display:flex;flex-direction:column;justify-content:space-between;gap:32px}
+.why-l h2{font-size:44px;line-height:1.05;letter-spacing:-1.2px}
+.why-r{flex:999 1 520px;min-width:0;padding:48px;display:flex;flex-direction:column;gap:18px;font-size:16px;line-height:1.65}
+.why-r p{margin:0}
+.chips{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
+.chips span{font-size:13px;padding:6px 12px;border-radius:999px;background:var(--soft);font-weight:600}
+.biz{padding:0 0 80px}
+.biz-card{background:var(--navy);color:#fff;border-radius:26px;padding:48px;display:flex;flex-wrap:wrap;gap:24px;align-items:center;justify-content:space-between}
+.biz-card h2{font-size:40px;letter-spacing:-1px;margin-bottom:10px}
+.biz-card p{margin:0;font-size:17px;line-height:1.5;max-width:600px;color:var(--od2)}
+footer{background:var(--deep);color:var(--od2);font-size:14px}
+footer .wrap{padding-top:48px;padding-bottom:40px;display:flex;flex-wrap:wrap;gap:24px;justify-content:space-between;align-items:flex-start}
+footer .logo b{color:#fff;font-size:22px}
+footer a{color:var(--od2)}
+@media (max-width:640px){
+  .wrap{padding:0 18px}
+  .hero .wrap{padding-top:56px;padding-bottom:64px}
+  .hero h1{font-size:44px;letter-spacing:-1px}
+  .why-l,.why-r,.biz-card{padding:28px}
+  .why-l h2,.band h2,.biz-card h2{font-size:32px}
+  .logo small{display:none}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <a class="logo" href="/" aria-label="woolmer home">
+      <svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><path d="M13 2.5 L8 8.5 M13 2.5 L18 8.5 M13 8 L5.5 15.5 M13 8 L20.5 15.5 M13 13.5 L3 23 M13 13.5 L23 23 M13 2.5 V23.5" stroke="#FF862F" stroke-width="2.2" stroke-linecap="round" fill="none"/></svg>
+      <b>woolmer</b><small>the W&amp;B guide</small>
+    </a>
+    <a class="btn btn-navy" href="mailto:info@woolmer.info?subject=List%20my%20business%20on%20woolmer">List your business</a>
+  </div>
+</header>
+
+<main>
+<section class="hero dk">
+  <div class="wrap">
+    <div class="hero-copy">
+      <span class="soon"><i aria-hidden="true"></i>Coming soon</span>
+      <p class="eyebrow">WHITEHILL · BORDON · LINDFORD · HEADLEY DOWN</p>
+      <h1>Everything local,<br>finally in<br><span>one place.</span></h1>
+      <p class="lead">A new, independent guide to every shop, takeaway, pub, club and pitch in Whitehill &amp; Bordon. Menus, opening hours, honest local reviews and answers from people who live here.</p>
+      <div class="ctas">
+        <a class="btn btn-fountain" href="mailto:info@woolmer.info?subject=Tell%20me%20when%20woolmer%20launches&amp;body=Please%20let%20me%20know%20when%20woolmer.info%20goes%20live.">Tell me when it launches</a>
+        <a class="btn btn-line" href="#why-woolmer">Why "woolmer"?</a>
+      </div>
+    </div>
+    <div class="hero-art" aria-hidden="true">
+      <svg viewBox="0 0 260 260"><circle cx="130" cy="130" r="124" fill="none" stroke="#1B3550" stroke-width="1.5"/><circle cx="130" cy="130" r="88" fill="none" stroke="#1B3550" stroke-width="1.5"/><path d="M130 52 L104 84 M130 52 L156 84 M130 80 L92 120 M130 80 L168 120 M130 108 L80 158 M130 108 L180 158 M130 52 V196" stroke="#FF862F" stroke-width="9" stroke-linecap="round" fill="none"/></svg>
+    </div>
+  </div>
+</section>
+
+<section class="band">
+  <div class="wrap">
+    <h2>What's coming</h2>
+    <div class="grid">
+      <div class="tile"><span class="ico"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M3 9h14M5 9v7h10V9M7 9V5h6v4" stroke="#55C2C3" stroke-width="1.8" fill="none" stroke-linejoin="round"/></svg></span><b>Every local business</b><p>Shops, takeaways, pubs, cafés, supermarkets, trades, clubs and sports facilities, all in one place.</p></div>
+      <div class="tile"><span class="ico"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M5 3h10v14H5zM8 7h4M8 10h4M8 13h2" stroke="#55C2C3" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg></span><b>Takeaway menus</b><p>Up-to-date menus and opening hours, kept current by the businesses themselves.</p></div>
+      <div class="tile"><span class="ico"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3l2.2 4.6 5 .7-3.6 3.5.9 5-4.5-2.4-4.5 2.4.9-5L2.8 8.3l5-.7z" stroke="#55C2C3" stroke-width="1.6" fill="none" stroke-linejoin="round"/></svg></span><b>Honest local reviews</b><p>Reviews from people who live here, moderated, with owners able to reply.</p></div>
+      <div class="tile"><span class="ico"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M3 5h14v8H9l-4 3v-3H3z" stroke="#55C2C3" stroke-width="1.8" fill="none" stroke-linejoin="round"/></svg></span><b>Ask the town</b><p>Ask a question, get answers from locals: the best chippy, under-8s football, anything.</p></div>
+      <div class="tile"><span class="ico"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><rect x="3" y="4" width="14" height="13" rx="2" stroke="#55C2C3" stroke-width="1.8" fill="none"/><path d="M3 8h14M7 2v4M13 2v4" stroke="#55C2C3" stroke-width="1.8" stroke-linecap="round"/></svg></span><b>What's on</b><p>Markets, events, clubs and new openings across Whitehill, Bordon, Lindford and Headley Down.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="why" id="why-woolmer">
+  <div class="wrap">
+    <div class="why-card">
+      <div class="why-l dk">
+        <svg width="56" height="56" viewBox="0 0 26 26" aria-hidden="true"><path d="M13 2.5 L8 8.5 M13 2.5 L18 8.5 M13 8 L5.5 15.5 M13 8 L20.5 15.5 M13 13.5 L3 23 M13 13.5 L23 23 M13 2.5 V23.5" stroke="#FF862F" stroke-width="1.8" stroke-linecap="round" fill="none"/></svg>
+        <div>
+          <p class="eyebrow" style="margin-bottom:10px">WHY "WOOLMER"?</p>
+          <h2>Named after the forest we all live in.</h2>
+        </div>
+      </div>
+      <div class="why-r">
+        <p>Long before the Army arrived, before the regeneration and long before Bordon had a high street, this whole area was the <strong>Royal Forest of Woolmer</strong>, open heath and woodland where kings came to hunt deer. Edward I hunted here in the 13th century, and Gilbert White wrote about "Wolmer Forest" in his Natural History of Selborne.</p>
+        <p>In the 1860s the forest was enclosed and turned into Army training land. That brought the camps at Bordon and Longmoor, and Bordon grew from a hamlet of about a hundred people into the town we know.</p>
+        <p>The name never left. It's on Woolmer Road, the Woolmer Trading Estate and the Woolmer Forest Heritage Society, and the protected heathland is still on our doorstep. We chose it so the guide belongs to all of us, in Whitehill, Bordon, Lindford and Headley Down, and keeps the place's oldest name alive.</p>
+        <div class="chips"><span>Royal hunting forest</span><span>Army town since the 1900s</span><span>Protected heathland today</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="biz">
+  <div class="wrap">
+    <div class="biz-card dk">
+      <div>
+        <h2>Run a local business?</h2>
+        <p>Get listed before we launch. It's free to have your business on woolmer, with your menu, photos and opening hours, and you can reply to reviews and questions yourself.</p>
+      </div>
+      <a class="btn btn-fountain" href="mailto:info@woolmer.info?subject=List%20my%20business%20on%20woolmer&amp;body=Business%20name%3A%0AWhat%20you%20do%3A%0AAddress%3A%0APhone%3A%0AWebsite%20or%20social%3A%0A">Get listed first</a>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div>
+      <span class="logo"><svg width="22" height="22" viewBox="0 0 26 26" aria-hidden="true"><path d="M13 2.5 L8 8.5 M13 2.5 L18 8.5 M13 8 L5.5 15.5 M13 8 L20.5 15.5 M13 13.5 L3 23 M13 13.5 L23 23 M13 2.5 V23.5" stroke="#FF862F" stroke-width="2.2" stroke-linecap="round" fill="none"/></svg><b>woolmer</b></span>
+      <p style="margin:12px 0 0;max-width:320px">An independent guide to Whitehill &amp; Bordon, built by people who live here.</p>
+    </div>
+    <div>
+      <p style="margin:0 0 6px">Get in touch: <a href="mailto:info@woolmer.info">info@woolmer.info</a></p>
+      <p style="margin:0">© 2026 woolmer</p>
+    </div>
+  </div>
+</footer>
+</body>
+</html>
