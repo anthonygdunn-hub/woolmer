@@ -38,7 +38,7 @@ async function load() {
 }
 
 // ------------------------------------------------------------------ helpers
-const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 const slugify = s => String(s).toLowerCase().replace(/&/g, 'and').replace(/['’]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 const today = new Date().toISOString().slice(0, 10);
 const isFeatured = p => p.featured_until && p.featured_until >= today;
@@ -244,7 +244,7 @@ ${signupBlock}`,
       body: `<section class="ph dk"><div class="wrap"><nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a> / ${esc(c.name)}</nav><h1>${esc(c.name)} in Whitehill &amp; Bordon</h1><p>${esc(c.blurb)}. ${list.length} place${list.length > 1 ? 's' : ''}.</p></div></section>
 <section class="sec" style="padding-top:28px"><div class="wrap">
   <div class="chips" role="group" aria-label="Filter by area" style="margin:0 0 20px"><button class="chip chip-l" type="button" data-area="" aria-pressed="true">Everywhere</button>${areas.map(a => `<button class="chip chip-l" type="button" data-area="${esc(a)}" aria-pressed="false">${esc(a)}</button>`).join('')}</div>
-  ${pins.length ? `<div class="map map-lg" id="map" data-pins='${esc(JSON.stringify(pins))}' role="region" aria-label="Map of ${esc(c.name.toLowerCase())}" style="margin-bottom:24px"></div>` : ''}
+  ${pins.length ? `<div class="map map-lg" id="map" data-pins="${esc(JSON.stringify(pins))}" role="region" aria-label="Map of ${esc(c.name.toLowerCase())}" style="margin-bottom:24px"></div>` : ''}
   <div class="grid" id="list">${list.map(p => card(p, stats[p.id])).join('')}</div>
   <p class="muted" style="font-size:14px;margin-top:24px">Missing somewhere? <a href="mailto:info@woolmer.info?subject=Missing%20from%20woolmer">Tell us</a> and we'll add it.</p>
 </div></section>`,
@@ -314,7 +314,7 @@ ${groups.map(([c, l]) => `<section class="sec" style="padding-bottom:0"><div cla
       ${p.email ? `<div><strong>Email</strong><br><a href="mailto:${esc(p.email)}">${esc(p.email)}</a></div>` : ''}
       ${p.hygiene_rating ? `<div><strong>Food hygiene</strong><br>${fsaBadge(p) || esc(p.hygiene_rating)}${p.rated_on ? `<br><span class="muted" style="font-size:13px">Inspected ${new Date(p.rated_on).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}. <a href="https://ratings.food.gov.uk/business/${p.fhrs_id}" rel="noopener">See it on the FSA site</a></span>` : ''}</div>` : ''}
     </div></div>
-    ${p.lat ? `<div class="map" id="map" data-pins='${esc(JSON.stringify([{ n: p.name, s: p.slug, lat: p.lat, lng: p.lng }]))}' role="region" aria-label="Map showing ${esc(p.name)}"></div>` : ''}
+    ${p.lat ? `<div class="map" id="map" data-pins="${esc(JSON.stringify([{ n: p.name, s: p.slug, lat: p.lat, lng: p.lng }]))}" role="region" aria-label="Map showing ${esc(p.name)}"></div>` : ''}
     ${p.claimed ? `<p class="muted" style="font-size:13px;margin:0">This listing is managed by the business. Spotted something wrong? <button class="linkish" type="button" data-report="listing" data-id="${p.id}">Report it</button></p>`
       : `<div class="panel panel-dk dk"><h2 style="font-size:24px">Is this your business?</h2><p>Claim it free to add your menu, opening hours, photos and phone number, and reply to reviews.</p><a class="btn btn-fountain" href="/claim/?p=${esc(p.slug)}">Claim this listing</a></div>`}
   </aside>
