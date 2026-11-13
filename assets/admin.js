@@ -168,7 +168,7 @@
 
   // ------------------------------------------------ what's on (events)
   function events() {
-    var KINDS = ['Live music', 'Quiz', 'Sport', 'Food & drink', 'Market', 'Family', 'Comedy', 'Community', 'Other'];
+    var KINDS = ['Live music', 'Quiz', 'Comedy', 'Theatre', 'Film', 'Dance', 'Family', 'Market', 'Food & drink', 'Sport', 'Workshop', 'Community', 'Other'];
     var since = new Date(Date.now() - 30 * 864e5).toISOString();
     Promise.all([
       sb.from('wb_events').select('*').gte('starts_at', since).order('starts_at'),
