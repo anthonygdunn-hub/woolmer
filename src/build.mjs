@@ -40,7 +40,7 @@ async function load() {
 
 // ------------------------------------------------------------------ helpers
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-const slugify = s => String(s).toLowerCase().replace(/&/g, 'and').replace(/['’]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+const slugify = s => String(s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/&/g, 'and').replace(/['’]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 const today = new Date().toISOString().slice(0, 10);
 const isFeatured = p => p.featured_until && p.featured_until >= today;
 
@@ -388,6 +388,8 @@ ${groups.map(([c, l]) => `<section class="sec" style="padding-bottom:0"><div cla
   }
 
   files['404.html'] = page({ title: 'Not found — woolmer', desc: 'Page not found', path: '/404', noindex: true, body: `<section class="ph dk"><div class="wrap"><h1>Lost in the forest</h1><p>That page isn't here. <a href="/" style="color:var(--fountain)">Head home</a> or <a href="/search/" style="color:var(--fountain)">search</a>.</p></div></section>` });
+  // old café URL from before accents were handled
+  files['caf-s-and-restaurants/index.html'] = `<!doctype html><html lang="en-GB"><head><meta charset="utf-8"><title>Cafés & restaurants — woolmer</title><meta name="robots" content="noindex"><link rel="canonical" href="${SITE}/cafes-and-restaurants/"><meta http-equiv="refresh" content="0;url=/cafes-and-restaurants/"></head><body><p><a href="/cafes-and-restaurants/">Cafés & restaurants</a></p></body></html>\n`;
   files['sitemap.xml'] = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${sitemap.map(u => `<url><loc>${SITE}${u}</loc></url>`).join('')}</urlset>\n`;
   files['robots.txt'] = `User-agent: *\nAllow: /\nDisallow: /account/\nDisallow: /claim/\nDisallow: /admin/\nSitemap: ${SITE}/sitemap.xml\n`;
   files['CNAME'] = 'woolmer.info\n';
