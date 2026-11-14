@@ -233,7 +233,7 @@ const signupBlock = `<section class="sec" id="signup"><div class="wrap"><div cla
 const whyBlock = `<section class="sec" id="why-woolmer"><div class="wrap"><div class="why-card">
   <div class="why-l dk">${TREE(56, 1.8)}<div><p class="eyebrow">Why "woolmer"?</p><h2>Named after the forest we all live in.</h2></div></div>
   <div class="why-r">
-    <p>Long before the Army arrived, before the regeneration and long before Bordon had a high street, this whole area was the <strong>Royal Forest of Woolmer</strong>, open heath and woodland where kings came to hunt deer. Edward I hunted here in the 13th century, and Gilbert White wrote about "Wolmer Forest" in his Natural History of Selborne.</p>
+    <p>Long before the Army arrived, before the regeneration and long before Bordon had a high street, this whole area was the <strong>Royal Forest of Woolmer</strong>, open heath and woodland where kings came to hunt deer. Edward I hunted here in the 13th century, and Gilbert White wrote about "Wolmer Forest", the old spelling, in his Natural History of Selborne.</p>
     <p>In the 1860s the forest was enclosed and turned into Army training land. That brought the camps at Bordon and Longmoor, and Bordon grew from a hamlet of about a hundred people into the town we know.</p>
     <p>The name never left. It's on Woolmer Road, the Woolmer Trading Estate and the Woolmer Forest Heritage Society, and the protected heathland is still on our doorstep. We chose it so the guide belongs to all of us, in Whitehill, Bordon, Lindford and Headley Down, and keeps the place's oldest name alive.</p>
   </div>
