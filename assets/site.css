@@ -328,3 +328,4 @@ button.chip{font:inherit;font-size:13px;cursor:pointer}
 .oc-open{background:rgba(43,163,107,.12);color:#1F7A50}
 .oc-open.oc-soon{background:rgba(77,201,196,.15);color:var(--teal-d)}
 .oc-closed{background:rgba(194,65,12,.1);color:#B13A0A}
+.rv-else{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:16px;padding-top:14px;border-top:1px solid var(--ln)}
