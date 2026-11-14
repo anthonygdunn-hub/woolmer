@@ -1,7 +1,7 @@
 /* woolmer admin — only works for info@dunnworks.io (database rules enforce it, this is just the screen) */
 (function () {
   var root = document.getElementById('adm'), WB = window.WB, esc = WB.esc, sb, tab = location.hash.slice(1) || 'claims';
-  var TABS = [['claims', 'Claims'], ['mod', 'Moderation'], ['reports', 'Reports'], ['featured', 'Featured'], ['events', "What's on"], ['places', 'Listings'], ['signups', 'Sign-ups'], ['stats', 'Visitors'], ['alerts', 'Alerts'], ['settings', 'Settings']];
+  var TABS = [['claims', 'Claims'], ['mod', 'Moderation'], ['reports', 'Reports'], ['featured', 'Featured'], ['events', "What's on"], ['walk', 'Street walk'], ['places', 'Listings'], ['signups', 'Sign-ups'], ['stats', 'Visitors'], ['alerts', 'Alerts'], ['settings', 'Settings']];
   function when(d) { return d ? new Date(d).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''; }
   function err(e) { alert(String(e && e.message || e)); }
   function chk(r) { if (r.error) throw r.error; return r.data; }
@@ -44,7 +44,7 @@
         '<div class="tabs">' + TABS.map(function (t) { return '<button data-t="' + t[0] + '"' + (t[0] === tab ? ' class="on"' : '') + '>' + t[1] + (n[t[0]] ? '<span class="cnt">' + n[t[0]] + '</span>' : '') + '</button>'; }).join('') + '</div><div id="pane"></div>';
       document.getElementById('so').onclick = function () { sb.auth.signOut().then(function () { location.reload(); }); };
       root.querySelectorAll('[data-t]').forEach(function (b) { b.onclick = function () { tab = b.dataset.t; location.hash = tab; shell(); }; });
-      ({ claims: claims, mod: mod, reports: reports, featured: featured, events: events, places: places, signups: signups, stats: stats, alerts: alerts, settings: settings })[tab]();
+      ({ claims: claims, mod: mod, reports: reports, featured: featured, events: events, walk: walk, places: places, signups: signups, stats: stats, alerts: alerts, settings: settings })[tab]();
     });
   }
   function pane(h) { document.getElementById('pane').innerHTML = h; }
@@ -177,6 +177,64 @@
         '<div class="item"><strong>Today ' + sum(function (x) { return x.day === today; }) + ' · last 7 days ' + sum(function (x) { return x.day >= wk; }) + ' · last 30 days ' + sum(function () { return true; }) + '</strong>' +
         '<div style="display:flex;align-items:flex-end;gap:2px;height:80px;margin-top:.75em">' + days.map(function (d) { return '<div title="' + d[0] + ': ' + d[1] + '" style="flex:1;background:#1f3a5f;min-height:2px;height:' + Math.round(d[1] / max * 100) + '%"></div>'; }).join('') + '</div></div>' +
         list('Top pages, 30 days', tally('path'), true) + list('Where visitors came from', tally('ref', function (x) { return x.ref; })));
+    });
+  }
+
+  // ------------------------------------------------ street walk: fill in phones and hours
+  function walk() {
+    var DAYS = [['mon', 'Mon'], ['tue', 'Tue'], ['wed', 'Wed'], ['thu', 'Thu'], ['fri', 'Fri'], ['sat', 'Sat'], ['sun', 'Sun']];
+    var CHAINS = /^(tesco|lidl|boots|screwfix|peacocks|morrisons|greggs|domino|betfred|coral|poundstretcher|mountain warehouse|shell|esso|jet|one stop|spar|londis|anytime fitness|b&m|budgens)/i;
+    sb.from('wb_places').select('id,name,slug,category,area,address,postcode,phone,hours').eq('listable', true).order('area').order('address').then(function (r) {
+      if (r.error) return err(r.error);
+      var skip = { 'Parks & outdoors': 1, 'Schools': 1, 'Food & catering': 1 };
+      var rows = (r.data || []).filter(function (p) { return !skip[p.category] && (!p.phone || !p.hours); });
+      var street = function (p) {
+        var a = String(p.address || '').replace(new RegExp('^' + p.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*', 'i'), '');
+        var m = a.match(/(High Street|Chalet Hill|Pinehill Road|Forest Centre|Forest Road|Woolmer Way|Woolmer Trading Estate|Petersfield Road|Sergeants Yard|The Shed|Hardy's|Liphook Road|Forge Road|Grayshott Road|Larch Road|Mill Lane|Sutton Field|Alma Road|Budds Lane|Farnham Road|Station Road|Elmfield Court|Broxhead|Hogmoor Road|Bolley Avenue|Oakhanger Road|Arford Road|Birch Road|Churt Road|Drift Road|Wittcomb Terrace|Challenger Place|Kildare Road|Ennerdale Road|Latchford Lane|Golf Lane|Honey Lane|Eddeys Lane|Sickles Lane|Standford Lane|Frith End Road)/i);
+        return m ? m[1].replace(/^the shed$/i, 'Sergeants Yard (The Shed)').replace(/^forest centre$/i, 'Pinehill Road (Forest Centre)') : 'Other / no street';
+      };
+      var groups = {};
+      rows.forEach(function (p) { var k = (p.area || 'Elsewhere') + ' · ' + street(p); (groups[k] = groups[k] || []).push(p); });
+      var keys = Object.keys(groups).sort();
+      var chainN = rows.filter(function (p) { return CHAINS.test(p.name); }).length;
+      pane('<p class="muted">' + rows.length + ' places are missing a phone number or opening hours, grouped by street so you can do one area per walk. Big chains (' + chainN + ') are marked: their hours are on their own websites, so skip them on the walk. Tap a place to fill it in; it saves straight to the site.</p>' +
+        '<p><button class="btn btn-ghost btn-sm" type="button" id="wk-print">Print checklist</button> <label style="display:inline-flex;gap:6px;align-items:center;margin-left:10px"><input type="checkbox" id="wk-chains" style="width:auto"> Show chains</label></p>' +
+        '<style>@media print{header,.tabbar,.install,#evstrip,.adm-tabs,nav,#wk-print,#wk-chains,label[for],.wk-form,details summary::marker{display:none!important}.wk-item{break-inside:avoid;border-bottom:1px solid #ccc;padding:6px 0}.wk-box{display:inline-block!important}}.wk-box{display:none;width:12px;height:12px;border:1px solid #333;margin-right:6px}.wk-chain{opacity:.55}.wk-tag{font-size:11px;font-weight:700;border-radius:999px;padding:1px 7px;margin-left:6px;background:#FDECE4;color:#B13A0A}</style>' +
+        keys.map(function (k) {
+          return '<h3 style="margin:1.4em 0 .4em">' + esc(k) + ' <span class="meta">(' + groups[k].length + ')</span></h3>' + groups[k].map(function (p) {
+            var chain = CHAINS.test(p.name);
+            return '<details class="item wk-item' + (chain ? ' wk-chain' : '') + '"' + (chain ? ' data-chain hidden' : '') + '><summary style="cursor:pointer"><span class="wk-box"></span><strong>' + esc(p.name) + '</strong>' + (!p.phone ? '<span class="wk-tag">phone</span>' : '') + (!p.hours ? '<span class="wk-tag">hours</span>' : '') + (chain ? ' <span class="meta">chain</span>' : '') +
+              '<br><span class="meta">' + esc([p.address, p.postcode].filter(Boolean).join(', ')) + ' · ' + esc(p.category) + '</span></summary>' +
+              '<form class="form wk-form" data-wk="' + p.id + '" style="margin-top:10px">' +
+              '<label>Phone<input name="phone" inputmode="tel" maxlength="40" value="' + esc(p.phone || '') + '"></label>' +
+              '<p class="meta" style="margin:4px 0 0">Hours like 09:00-17:30. Two sessions: 11:30-14:00,17:00-23:00. Leave blank if closed that day.</p>' +
+              '<div style="display:grid;grid-template-columns:44px 1fr;gap:6px 10px;align-items:center">' + DAYS.map(function (d) {
+                var v = p.hours && p.hours[d[0]] && !/closed/i.test(p.hours[d[0]]) ? p.hours[d[0]] : '';
+                return '<span>' + d[1] + '</span><input name="h_' + d[0] + '" maxlength="40" placeholder="Closed" value="' + esc(v) + '">';
+              }).join('') + '</div>' +
+              '<div class="acts"><button class="btn btn-ghost btn-sm" type="button" data-copy>Copy Mon to Tue–Sat</button><button class="btn btn-navy btn-sm" type="submit">Save</button><button class="btn btn-ghost btn-sm" type="button" data-gone>Closed down</button></div><p class="meta" data-m role="status"></p></form></details>';
+          }).join('');
+        }).join(''));
+      document.getElementById('wk-print').onclick = function () { root.querySelectorAll('details.wk-item').forEach(function (d) { d.open = false; }); window.print(); };
+      document.getElementById('wk-chains').onchange = function () { var on = this.checked; root.querySelectorAll('[data-chain]').forEach(function (d) { d.hidden = !on; }); };
+      var okTime = /^(\d{1,2}:\d{2}-\d{1,2}:\d{2})(,\s*\d{1,2}:\d{2}-\d{1,2}:\d{2})*$/;
+      root.querySelectorAll('form[data-wk]').forEach(function (f) {
+        f.querySelector('[data-copy]').onclick = function () { ['tue', 'wed', 'thu', 'fri', 'sat'].forEach(function (d) { f['h_' + d].value = f.h_mon.value; }); };
+        f.querySelector('[data-gone]').onclick = function () {
+          if (!confirm('Hide this listing because it has closed down? You can make it public again from Listings.')) return;
+          sb.from('wb_places').update({ listable: false, listable_note: 'Closed down (street walk ' + new Date().toISOString().slice(0, 10) + ')' }).eq('id', +f.dataset.wk).then(function (r2) { if (r2.error) return err(r2.error); f.closest('details').remove(); });
+        };
+        f.onsubmit = function (ev) {
+          ev.preventDefault(); var m = f.querySelector('[data-m]'), h = {}, any = false, bad = '';
+          DAYS.forEach(function (d) { var v = f['h_' + d[0]].value.trim().replace(/\s*-\s*/g, '-').replace(/\./g, ':'); if (v && !okTime.test(v)) bad = d[1]; h[d[0]] = v || 'Closed'; if (v) any = true; });
+          if (bad) { m.textContent = 'Check ' + bad + ': use 24-hour times like 09:00-17:30'; return; }
+          m.textContent = 'Saving…';
+          sb.from('wb_places').update({ phone: f.phone.value.trim() || null, hours: any ? h : null }).eq('id', +f.dataset.wk).then(function (r3) {
+            if (r3.error) { m.textContent = 'Error: ' + r3.error.message; return; }
+            m.textContent = 'Saved. Live on the site within the hour.'; f.closest('details').style.opacity = '.5';
+          });
+        };
+      });
     });
   }
 
