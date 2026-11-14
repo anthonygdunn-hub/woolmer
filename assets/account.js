@@ -75,7 +75,7 @@
   }
 
   function getPlace(field, value) {
-    return sb.from('wb_places').select('id,slug,name,category,area,address,postcode,claimed,phone,website,menu_url,email,description,hours,menu,tags,featured_until').eq(field, value).maybeSingle().then(function (r) { return r.data; });
+    return sb.from('wb_places').select('id,slug,name,category,area,address,postcode,claimed,phone,website,menu_url,email,description,hours,menu,photos,tags,featured_until').eq(field, value).maybeSingle().then(function (r) { return r.data; });
   }
 
   // ---------------------------------------------------------------- routes
@@ -235,9 +235,53 @@
         DAYS.map(function (d) { return '<label>' + d[1] + '<input name="h_' + d[0] + '" maxlength="40" value="' + esc(hours[d[0]] && !/closed/i.test(hours[d[0]]) ? hours[d[0]] : '') + '"></label>'; }).join('') + '</div></fieldset>' +
         '<label>Menu<textarea name="menu" rows="10" style="font-family:ui-monospace,Menlo,monospace;font-size:13px" placeholder="## Starters\nSpring rolls | 3.50 | Vegetable\n## Mains\nChicken curry | 8.90">' + esc(menuToText(p.menu)) + '</textarea><span class="muted" style="font-size:13px;font-weight:400">A line starting ## is a section. Each item is: name | price | description.</span></label>' +
         '<button class="btn btn-navy" type="submit" style="align-self:flex-start">Save changes</button><p class="msg" role="status"></p><p class="muted" style="font-size:13px;margin:0">Changes show on your listing within the hour.</p></form>' +
+        '<h3 style="margin-top:28px">Photos</h3><p class="muted" style="font-size:14px">Up to 6. The first one shows on your card and at the top of your listing. Only upload photos you took or have permission to use.</p><div class="ph-grid" data-ph></div><label class="btn btn-ghost btn-sm" style="align-self:flex-start;cursor:pointer;margin-top:10px">Add photos<input type="file" accept="image/*" multiple data-phin hidden></label><p class="msg" data-phmsg role="status"></p>' +
         '<h3 style="margin-top:28px">Reviews</h3><div data-rv><p class="muted">Loading…</p></div>';
       document.getElementById('owned').appendChild(box);
       var f = box.querySelector('[data-f]');
+      // ---- photos
+      var photos = Array.isArray(p.photos) ? p.photos.slice() : [], phBox = box.querySelector('[data-ph]'), phMsg = box.querySelector('[data-phmsg]');
+      var savePhotos = function (note) {
+        phMsg.textContent = 'Saving…';
+        return sb.rpc('wb_owner_update', { p_place: p.id, p: { photos: photos } }).then(function (r) { phMsg.textContent = r.error ? niceErr(r.error) : (note || 'Saved. Live within the hour.'); paintPh(); });
+      };
+      var paintPh = function () {
+        phBox.innerHTML = photos.map(function (x, i) {
+          return '<figure><img src="' + esc(x.src) + '" alt=""><figcaption>' + (i === 0 ? '<b>Main photo</b>' : '<button type="button" class="linkish" data-main="' + i + '">Make main</button>') + ' · <button type="button" class="linkish" data-del="' + i + '">Remove</button></figcaption></figure>';
+        }).join('') || '<p class="muted">No photos yet.</p>';
+        phBox.querySelectorAll('[data-main]').forEach(function (b) { b.onclick = function () { var i = +b.dataset.main; photos.unshift(photos.splice(i, 1)[0]); savePhotos(); }; });
+        phBox.querySelectorAll('[data-del]').forEach(function (b) { b.onclick = function () { if (!confirm('Remove this photo?')) return; photos.splice(+b.dataset.del, 1); savePhotos('Removed.'); }; });
+      };
+      paintPh();
+      var shrink = function (file) {
+        return new Promise(function (res, rej) {
+          var img = new Image(), url = URL.createObjectURL(file);
+          img.onload = function () {
+            var s = Math.min(1, 1600 / Math.max(img.width, img.height)), c = document.createElement('canvas');
+            c.width = Math.round(img.width * s); c.height = Math.round(img.height * s);
+            c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(url);
+            c.toBlob(function (b) { b ? res(b) : rej(new Error('Could not read that image')); }, 'image/webp', 0.8);
+          };
+          img.onerror = function () { rej(new Error('That file is not an image we can read')); };
+          img.src = url;
+        });
+      };
+      box.querySelector('[data-phin]').addEventListener('change', function (e) {
+        var files = [].slice.call(e.target.files || []).slice(0, Math.max(0, 6 - photos.length));
+        if (!files.length) { phMsg.textContent = 'You already have 6 photos. Remove one first.'; return; }
+        phMsg.textContent = 'Uploading ' + files.length + '…';
+        files.reduce(function (chain, file, n) {
+          return chain.then(function () {
+            return shrink(file).then(function (blob) {
+              var path = 'places/' + p.id + '/' + Date.now() + '-' + n + '.webp';
+              return sb.storage.from('wb-public').upload(path, blob, { contentType: 'image/webp', cacheControl: '31536000' }).then(function (r) {
+                if (r.error) throw r.error;
+                photos.push({ src: sb.storage.from('wb-public').getPublicUrl(path).data.publicUrl, alt: p.name, credit: p.name, path: path });
+              });
+            });
+          });
+        }, Promise.resolve()).then(function () { e.target.value = ''; return savePhotos('Uploaded. Live within the hour.'); }).catch(function (er) { phMsg.textContent = 'Upload failed: ' + (er.message || er); paintPh(); });
+      });
       f.addEventListener('submit', function (e) {
         e.preventDefault(); var m = f.querySelector('.msg');
         var h = {}; DAYS.forEach(function (d) { var v = f['h_' + d[0]].value.trim(); h[d[0]] = v || 'Closed'; });
