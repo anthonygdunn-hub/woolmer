@@ -9,6 +9,7 @@
  * (anon key, RLS only exposes listable rows). Reviews and questions are
  * loaded live in the browser, so they show as soon as they're approved.
  */
+import { mockupPage, wantsMockup } from './mockup.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -135,6 +136,12 @@ const TAB_ICONS = {
   user: ic('<circle cx="12" cy="8.5" r="3.5"/><path d="M5 20c1.2-3.6 4-5.5 7-5.5s5.8 1.9 7 5.5"/>'),
 };
 const NAV = [['Takeaways', '/takeaways/'], ['Pubs & bars', '/pubs-and-bars/'], ['Cafés', '/cafes-and-restaurants/'], ['Shops', '/shops/'], ["What's on", '/whats-on/'], ['Ask the town', '/ask/'], ['For businesses', '/business/']];
+const DW_TILE = `<section class="dw-tile-wrap"><div class="wrap"><div class="dw-tile">
+  <div class="dw-tile-art" aria-hidden="true"><span></span><span></span><span></span></div>
+  <div class="dw-tile-txt"><p class="eyebrow">For local businesses</p><h2>See your new website before you pay a penny</h2><p>Every local business on woolmer has a free mock-up website waiting. Find yours and tap <b>See your mock-up site</b>. Dunnworks, the Bordon studio that built woolmer, can make it real from £750, with no monthly fees.</p></div>
+  <div class="dw-tile-cta"><a class="btn btn-fountain" href="/search/">Find my business</a><a class="btn btn-ghost-l" href="https://dunnworks.io/?utm_source=woolmer&utm_medium=referral&utm_campaign=tile">dunnworks.io</a></div>
+</div></div></section>`;
+
 function page({ title, desc, path: p, body, head = '', scripts = '', noindex = false, jsonld = null }) {
   const url = SITE + p;
   return `<!doctype html>
@@ -183,6 +190,7 @@ ${jsonld ? `<script type="application/ld+json">${JSON.stringify(jsonld).replace(
 <div class="evstrip" id="evstrip" hidden></div>
 <main id="main">
 ${body}
+${p.startsWith('/p/') || p.startsWith('/admin') || p.startsWith('/account') ? '' : DW_TILE}
 </main>
 <footer class="site-f">
   <div class="wrap">
@@ -363,6 +371,7 @@ ${groups.map(([c, l]) => `<section class="sec" style="padding-bottom:0"><div cla
       aggregateRating: st && st.reviews ? { '@type': 'AggregateRating', ratingValue: st.rating, reviewCount: st.reviews } : undefined,
     };
     const dirUrl = p.lat ? `https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lng}` : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.name + ' ' + addr)}`;
+    if (wantsMockup(p)) files[`mockup/${p.slug}/index.html`] = mockupPage(p, { SITE, iconSvg: c && ICONS[c.icon] ? `<svg viewBox="0 0 20 20" aria-hidden="true">${ICONS[c.icon]}</svg>` : '' });
     files[`p/${p.slug}/index.html`] = page({
       title: `${p.name}, ${p.area || 'Bordon'} — ${c ? c.name : p.category} — woolmer`,
       desc: p.description ? p.description.slice(0, 155) : (p.fhrs_id ? `${p.name} in ${p.area || 'Bordon'}${p.postcode ? ' (' + p.postcode + ')' : ''}: food hygiene rating ${/^[0-5]$/.test(p.hygiene_rating || '') ? p.hygiene_rating + ' out of 5' : 'pending'}, address and opening hours${REV ? ', plus local reviews' : ''}.` : `${p.name}, ${p.category.toLowerCase()} in ${p.area || 'Bordon'}${p.postcode ? ' (' + p.postcode + ')' : ''}: address, phone and opening hours${REV ? ', plus local reviews' : ''}.`),
@@ -397,7 +406,7 @@ ${groups.map(([c, l]) => `<section class="sec" style="padding-bottom:0"><div cla
     ${p.lat ? `<div class="map" id="map" data-pins="${esc(JSON.stringify([{ n: p.name, s: p.slug, lat: p.lat, lng: p.lng }]))}" role="region" aria-label="Map showing ${esc(p.name)}"></div>` : ''}
     ${p.claimed ? `<p class="muted" style="font-size:13px;margin:0">This listing is managed by the business. Spotted something wrong? <button class="linkish" type="button" data-report="listing" data-id="${p.id}">Report it</button></p>`
       : `<div class="panel panel-dk dk"><h2 style="font-size:24px">Is this your business?</h2><p>Claim it free to add your menu, opening hours, photos and phone number${REV ? ', and reply to reviews' : ''}.</p><a class="btn btn-fountain" href="/claim/?p=${esc(p.slug)}">Claim this listing</a></div>`}
-    ${!p.website ? `<div class="panel dw-nudge"><p class="eyebrow" style="color:var(--teal-d)">No website yet?</p><p style="margin:6px 0 12px">${esc(p.name)} doesn't have a website listed. Dunnworks, the Bordon designer who built woolmer, makes fast websites for local businesses from £750, with no monthly fees.</p><a class="btn btn-ghost btn-sm" href="https://dunnworks.io/?utm_source=woolmer&utm_medium=referral&utm_campaign=listing">Talk to Dunnworks</a></div>` : ''}
+    ${wantsMockup(p) ? `<div class="panel dw-nudge"><p class="eyebrow" style="color:var(--teal-d)">${p.website ? 'Is this your business?' : 'No website yet?'}</p><p style="margin:6px 0 14px">${p.website ? `Dunnworks, the Bordon studio that built woolmer, has made a free concept of a fresh website for ${esc(p.name)}.` : `${esc(p.name)} doesn't have a website listed. Dunnworks, the Bordon studio that built woolmer, has made a free mock-up of what it could look like.`} Built for real from £750, with no monthly fees.</p><div style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn btn-navy btn-sm" href="/mockup/${esc(p.slug)}/">See your mock-up site</a><a class="btn btn-ghost btn-sm" href="https://dunnworks.io/?utm_source=woolmer&utm_medium=referral&utm_campaign=listing&utm_content=${encodeURIComponent(p.slug)}">Talk to Dunnworks</a></div></div>` : ''}
   </aside>
 </div></div></section>`,
     });
@@ -577,7 +586,7 @@ ${groups.map(([c, l]) => `<section class="sec" style="padding-bottom:0"><div cla
   // old café URL from before accents were handled
   files['caf-s-and-restaurants/index.html'] = `<!doctype html><html lang="en-GB"><head><meta charset="utf-8"><title>Cafés & restaurants — woolmer</title><meta name="robots" content="noindex"><link rel="canonical" href="${SITE}/cafes-and-restaurants/"><meta http-equiv="refresh" content="0;url=/cafes-and-restaurants/"></head><body><p><a href="/cafes-and-restaurants/">Cafés & restaurants</a></p></body></html>\n`;
   files['sitemap.xml'] = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${sitemap.map(u => `<url><loc>${SITE}${u}</loc></url>`).join('')}</urlset>\n`;
-  files['robots.txt'] = `User-agent: *\nAllow: /\nDisallow: /account/\nDisallow: /claim/\nDisallow: /admin/\nSitemap: ${SITE}/sitemap.xml\n`;
+  files['robots.txt'] = `User-agent: *\nAllow: /\nDisallow: /account/\nDisallow: /claim/\nDisallow: /admin/\nDisallow: /mockup/\nSitemap: ${SITE}/sitemap.xml\n`;
   files['CNAME'] = 'woolmer.info\n';
   files['.nojekyll'] = '';
   return files;
