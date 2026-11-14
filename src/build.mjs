@@ -185,7 +185,7 @@ ${body}
       <p style="margin:12px 0 0">An independent guide to Whitehill &amp; Bordon, built by people who live here. Named after the <a href="/#why-woolmer">Royal Forest of Woolmer</a>.</p>
     </div>
     <div class="cols">
-      <div><strong>Explore</strong>${CATS.slice(0, 5).map(c => `<a href="/${c.slug}/">${esc(c.name)}</a>`).join('')}<a href="/whats-on/">What's on</a><a href="/search/">Search</a></div>
+      <div><strong>Explore</strong>${CATS.slice(0, 5).map(c => `<a href="/${c.slug}/">${esc(c.name)}</a>`).join('')}<a href="/whats-on/">What's on</a><a href="/local/">Bins, tip &amp; local info</a><a href="/search/">Search</a></div>
       <div><strong>Businesses</strong><a href="/business/">Claim your listing</a><a href="/business/#featured">Get featured</a><a href="/account/">Owner sign in</a></div>
       <div><strong>woolmer</strong><a href="/guidelines/">Review guidelines</a><a href="/terms/">Terms</a><a href="/privacy/">Privacy</a><a href="mailto:info@woolmer.info">info@woolmer.info</a></div>
     </div>
@@ -273,7 +273,7 @@ function build(data) {
   <p class="lead">${places.length} local takeaways, pubs, cafés and shops, with maps, food hygiene ratings, opening hours and menus${REV ? ', and answers from people who live here' : ''}.</p>
   <div class="live" id="live" aria-live="polite" hidden></div>
   <form class="search" action="/search/" role="search" autocomplete="off"><label class="sr" for="q">Search woolmer</label><input id="q" name="q" type="search" placeholder="Try &quot;chippy&quot;, &quot;pub Headley&quot; or &quot;Lidl&quot;" aria-autocomplete="list" aria-controls="suggest" aria-expanded="false"><button class="btn btn-fountain" type="submit">Search</button><div class="suggest" id="suggest" role="listbox" hidden></div></form>
-  <div class="chips"><a class="chip" href="/near/">📍 Near me</a>${CATS.slice(0, 5).map(c => `<a class="chip" href="/${c.slug}/">${esc(c.name)}</a>`).join('')}</div>
+  <div class="chips"><a class="chip" href="/near/">📍 Near me</a><a class="chip" href="/local/">🗑️ Bin day &amp; local info</a>${CATS.slice(0, 5).map(c => `<a class="chip" href="/${c.slug}/">${esc(c.name)}</a>`).join('')}</div>
 </div><p class="hero-credit">Photo: <a href="https://commons.wikimedia.org/wiki/File:Pond_on_Broxhead_Common,_Hampshire_-_geograph.org.uk_-_5927349.jpg" rel="nofollow">Pond on Broxhead Common</a> by John P Reeves, <a href="https://creativecommons.org/licenses/by-sa/2.0/" rel="nofollow">CC BY-SA 2.0</a></p></section>
 <section class="sec sec-band"><div class="wrap">
   <div class="sec-head"><h2>What are you after?</h2><a href="/search/">Search everything</a></div>
@@ -392,6 +392,38 @@ ${groups.map(([c, l]) => `<section class="sec" style="padding-bottom:0"><div cla
       : `<div class="panel panel-dk dk"><h2 style="font-size:24px">Is this your business?</h2><p>Claim it free to add your menu, opening hours, photos and phone number${REV ? ', and reply to reviews' : ''}.</p><a class="btn btn-fountain" href="/claim/?p=${esc(p.slug)}">Claim this listing</a></div>`}
   </aside>
 </div></div></section>`,
+    });
+  }
+
+  // local info
+  {
+    const byName = n => places.find(p => p.name === n);
+    const L = (n, label) => { const p = byName(n); return p ? `<a href="/p/${p.slug}/">${esc(label || n)}</a>` : esc(label || n); };
+    sitemap.push('/local/');
+    files['local/index.html'] = page({
+      title: 'Bins, the tip, buses and local info for Whitehill & Bordon — woolmer', desc: 'Bin collection days, the Bordon tip, bus routes, GP surgeries, pharmacies and council contacts for Whitehill, Bordon and nearby villages.', path: '/local/',
+      body: `<section class="ph dk"><div class="wrap"><nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a> / Local info</nav><h1>Local info</h1><p>The everyday stuff: bins, the tip, buses, doctors and who to call.</p></div></section>
+<section class="sec" style="padding-top:28px"><div class="wrap info-grid">
+  <div class="panel info"><span class="info-ico" aria-hidden="true">🗑️</span><h2>Bin day</h2>
+    <p>East Hampshire District Council collects rubbish (green bin), recycling (black bin) and glass (glass box) every other week, and food waste every week. Put bins out by 6am on your collection day.</p>
+    <p><a class="btn btn-navy btn-sm" href="https://www.easthants.gov.uk/bin-collections" rel="noopener" target="_blank">Find your bin day ↗</a></p>
+    <ul class="info-list"><li><a href="https://www.easthants.gov.uk/your-bins" rel="noopener" target="_blank">What goes in which bin</a></li><li><a href="https://www.easthants.gov.uk/food-waste" rel="noopener" target="_blank">Food waste collections</a></li><li><a href="https://www.easthants.gov.uk/garden-waste" rel="noopener" target="_blank">Garden waste (paid service)</a></li><li>Missed bin? Report it by 4pm the next working day</li></ul></div>
+  <div class="panel info"><span class="info-ico" aria-hidden="true">♻️</span><h2>The tip</h2>
+    <p>${L('Bordon Recycling Centre (the tip)', 'Bordon Recycling Centre')}, Station Road. Open 7 days a week (closed Christmas Day, Boxing Day and New Year's Day). You must book a slot before you go.</p>
+    <ul class="info-list"><li>9am to 4pm, October to February</li><li>9am to 5pm in March</li><li>9am to 6pm, April to September</li></ul>
+    <p><a class="btn btn-navy btn-sm" href="https://www.hants.gov.uk/wasteandrecycling/recyclingcentres" rel="noopener" target="_blank">Book a tip slot ↗</a></p></div>
+  <div class="panel info"><span class="info-ico" aria-hidden="true">🚌</span><h2>Buses</h2>
+    <ul class="info-list"><li><b>13</b> Bordon, Alton, Basingstoke (now runs on Sundays too)</li><li><b>18</b> Bordon, Farnham, Aldershot</li><li><b>23</b> Liphook, Bordon, Haslemere</li><li><b>28</b> Bordon town service</li><li><b>418</b> and <b>737</b> college buses</li></ul>
+    <p><a class="btn btn-navy btn-sm" href="https://www.stagecoachbus.com/" rel="noopener" target="_blank">Stagecoach timetables ↗</a> <a class="btn btn-ghost btn-sm" href="https://bustimes.org/" rel="noopener" target="_blank">Live times ↗</a></p></div>
+  <div class="panel info"><span class="info-ico" aria-hidden="true">🩺</span><h2>Doctors and pharmacies</h2>
+    <ul class="info-list"><li>${L('Woolmer Surgery')}, Forest Road</li><li>${L('Pinehill Surgery')}, Pinehill Road</li><li>${L('Forest Surgery')}, Forest Road</li><li>${L('Boots')}, Forest Centre</li><li>${L('Bordon Pharmacy')}, Forest Centre</li><li>${L('Nitespharma UK Limited', 'Nitespharma')}, High Street</li></ul>
+    <p class="muted" style="font-size:14px;margin:0">Not an emergency but need help now? Call <b>111</b>. Emergency: <b>999</b>.</p></div>
+  <div class="panel info"><span class="info-ico" aria-hidden="true">🏛️</span><h2>Councils</h2>
+    <ul class="info-list"><li><a href="https://www.whitehilltowncouncil.gov.uk/" rel="noopener" target="_blank">Whitehill Town Council</a>: events, parks, allotments, Christmas lights</li><li><a href="https://www.easthants.gov.uk/" rel="noopener" target="_blank">East Hampshire District Council</a>: bins, council tax, planning, housing</li><li><a href="https://www.hants.gov.uk/" rel="noopener" target="_blank">Hampshire County Council</a>: roads, schools, libraries, the tip</li><li><a href="https://headleyparish.gov.uk/" rel="noopener" target="_blank">Headley Parish Council</a>: Headley, Headley Down, Lindford, Standford</li></ul></div>
+  <div class="panel info"><span class="info-ico" aria-hidden="true">📞</span><h2>Useful numbers</h2>
+    <ul class="info-list"><li>Police, non-emergency: <b>101</b></li><li>NHS non-emergency: <b>111</b></li><li>Power cut: <b>105</b></li><li>Gas emergency: <b>0800 111 999</b></li><li>${L('Citizens Advice')}, Pinehill Road</li><li>${L('Bordon Library')}, Forest Centre</li></ul></div>
+</div>
+<div class="wrap"><p class="muted" style="font-size:13px">Checked November 2026. Times and services change, so follow the links for the latest. Something wrong or missing? <a href="mailto:info@woolmer.info?subject=Local%20info">Tell us</a>.</p></div></section>`,
     });
   }
 
