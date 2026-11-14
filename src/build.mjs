@@ -233,7 +233,7 @@ function card(p, stat) {
 const sortPlaces = (a, b) => (isFeatured(b) - isFeatured(a)) || (b.claimed - a.claimed) || a.name.localeCompare(b.name);
 
 const signupBlock = `<section class="sec" id="signup"><div class="wrap"><div class="panel" style="display:flex;flex-wrap:wrap;gap:36px">
-  <div style="flex:1 1 280px;min-width:0"><h2>Stay in the loop</h2><p class="muted">Get the odd email when new places, events and features land. Run a local business? Tell us and we'll help you get your listing looking its best.</p></div>
+  <div style="flex:1 1 280px;min-width:0"><h2>This week in Bordon, by email</h2><p class="muted">One short email every Thursday: what's on this week, new places and local offers. Unsubscribe in one click. Run a local business? Tell us and we'll help you get your listing looking its best.</p></div>
   <form class="form" id="su-form" style="flex:2 1 400px;min-width:0" novalidate>
     <div class="seg" role="group" aria-label="I am"><button type="button" data-kind="resident" aria-pressed="true">I live locally</button><button type="button" data-kind="business" aria-pressed="false">I run a business</button></div>
     <div class="row2"><label>Your name<input name="name" autocomplete="name" maxlength="120"></label><label>Email<input name="email" type="email" autocomplete="email" required maxlength="200"></label></div>
