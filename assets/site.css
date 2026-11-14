@@ -328,4 +328,9 @@ button.chip{font:inherit;font-size:13px;cursor:pointer}
 .oc-open{background:rgba(43,163,107,.12);color:#1F7A50}
 .oc-open.oc-soon{background:rgba(77,201,196,.15);color:var(--teal-d)}
 .oc-closed{background:rgba(194,65,12,.1);color:#B13A0A}
-.rv-else{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:16px;padding-top:14px;border-top:1px solid var(--ln)}
+.rv-else{margin-top:18px;padding-top:14px;border-top:1px solid var(--ln)}
+.rv-else .meta{margin:0 0 10px}
+.rv-links{display:flex;flex-wrap:wrap;gap:10px}
+.rv-link{display:inline-flex;align-items:center;gap:8px;white-space:nowrap;padding:9px 16px;border:1px solid var(--ln);border-radius:999px;color:var(--ink,#0C243C);text-decoration:none;font-weight:600;font-size:14px;background:#fff;transition:transform .2s,border-color .2s,box-shadow .2s}
+.rv-link:hover{transform:translateY(-2px);border-color:var(--fountain);box-shadow:0 8px 18px -10px rgba(12,36,60,.4)}
+.rv-link svg{color:var(--teal-d)}
