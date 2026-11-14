@@ -18,7 +18,7 @@
     count.textContent = res.length ? res.length + ' result' + (res.length > 1 ? 's' : '') : 'Nothing found. Try a shorter word, or tell us what\'s missing at info@woolmer.info.';
     out.innerHTML = res.slice(0, 60).map(function (r) {
       var p = r.p;
-      return '<a class="card" href="/p/' + p.s + '/"><div class="art"><span class="initial" aria-hidden="true">' + WB.esc(p.n.replace(/^the\s+/i, '')[0] || '') + '</span>' + (p.f ? '<span class="badge badge-f">Featured</span>' : p.v ? '<span class="badge badge-v">Owner-verified</span>' : '') + '</div><div class="body"><h3>' + WB.esc(p.n) + '</h3><span class="meta">' + WB.esc([p.c, p.a].filter(Boolean).join(' · ')) + '</span>' + (/^[0-5]$/.test(p.h || '') ? '<div class="tags"><span class="fsa"><i class="' + (+p.h <= 2 ? 'lo' : '') + '">' + p.h + '</i>Food hygiene rating</span></div>' : '') + '</div></a>';
+      return '<a class="card" href="/p/' + p.s + '/">' + WB.art(p) + (p.f ? '<span class="badge badge-f">Featured</span>' : p.v ? '<span class="badge badge-v">Owner-verified</span>' : '') + '</div><div class="body"><h3>' + WB.esc(p.n) + '</h3><span class="meta">' + WB.esc([p.c, p.a].filter(Boolean).join(' · ')) + '</span>' + (/^[0-5]$/.test(p.h || '') ? '<div class="tags"><span class="fsa"><i class="' + (+p.h <= 2 ? 'lo' : '') + '">' + p.h + '</i>Food hygiene rating</span></div>' : '') + '</div></a>';
     }).join('');
   }
   fetch('/places.json').then(function (r) { return r.json(); }).then(function (d) {

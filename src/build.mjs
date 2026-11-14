@@ -204,11 +204,17 @@ ${scripts}
 }
 
 // ------------------------------------------------------------------ components
+const photo1 = p => Array.isArray(p.photos) && p.photos[0] && /^https:\/\//.test(p.photos[0].src || '') ? p.photos[0] : null;
+function artHtml(p) {
+  const c = catBySlug[p.category], ph = photo1(p), ico = c && ICONS[c.icon];
+  if (ph) return `<div class="art has-photo"><img src="${esc(ph.src)}" alt="${esc(ph.alt || p.name)}" loading="lazy" decoding="async">`;
+  return `<div class="art art-c" data-cat="${esc(c ? c.slug : '')}">${ico ? `<svg class="art-ico" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">${ico}</svg>` : ''}<span class="initial" aria-hidden="true">${esc(p.name.replace(/^the\s+/i, '')[0] || '')}</span>`;
+}
 function card(p, stat) {
   const c = catBySlug[p.category];
   const sub = [c ? c.name : p.category, p.area].filter(Boolean).join(' · ');
   return `<a class="card" href="/p/${p.slug}/" data-slug="${p.slug}" data-area="${esc(p.area || '')}" data-name="${esc(p.name.toLowerCase())}">
-  <div class="art"><span class="initial" aria-hidden="true">${esc(p.name.replace(/^the\s+/i, '')[0] || '')}</span>${isFeatured(p) ? '<span class="badge badge-f">Featured</span>' : p.claimed ? '<span class="badge badge-v">Owner-verified</span>' : ''}</div>
+  ${artHtml(p)}${isFeatured(p) ? '<span class="badge badge-f">Featured</span>' : p.claimed ? '<span class="badge badge-v">Owner-verified</span>' : ''}</div>
   <div class="body">
     <h3>${esc(p.name)}</h3>
     <span class="meta">${esc(sub)}</span>
@@ -362,6 +368,7 @@ ${groups.map(([c, l]) => `<section class="sec" style="padding-bottom:0"><div cla
 </div></section>
 <section class="sec" style="padding-top:28px"><div class="wrap"><div class="place-grid" id="place" data-id="${p.id}" data-slug="${esc(p.slug)}" data-name="${esc(p.name)}" ${hours ? `data-hours='${esc(JSON.stringify(hours))}'` : ''}>
   <div class="place-main">
+    ${photo1(p) ? `<figure class="place-photo"><img src="${esc(photo1(p).src)}" alt="${esc(photo1(p).alt || p.name)}"><figcaption>${photo1(p).link ? `<a href="${esc(photo1(p).link)}" rel="nofollow noopener" target="_blank">Photo</a>` : 'Photo'}${photo1(p).credit ? ' by ' + esc(photo1(p).credit) : ''}${photo1(p).lic ? ', ' + esc(photo1(p).lic) : ''}</figcaption></figure>` : ''}
     ${p.description ? `<div class="panel"><h2>About</h2><p style="margin:0">${esc(p.description)}</p>${(p.tags || []).length ? `<div class="tags">${p.tags.map(t => `<span class="tag">${esc(t)}</span>`).join('')}</div>` : ''}</div>` : ''}
     ${menu && menu.length ? `<div class="panel" id="menu"><h2>Menu</h2>${menu.map(s => `<div class="menu-sec"><h3>${esc(s.section)}</h3>${(s.items || []).map(i => `<div class="menu-item"><span>${esc(i.name)}${i.desc ? `<small>${esc(i.desc)}</small>` : ''}</span>${i.price ? `<strong>£${esc(String(i.price).replace(/^£/, ''))}</strong>` : ''}</div>`).join('')}</div>`).join('')}<p class="muted" style="font-size:13px;margin:14px 0 0">Prices set by the business. Check allergens with them before you order.</p></div>` : ''}
     <div class="panel" id="reviews"><h2>Local reviews</h2><div id="reviews-list"><p class="muted">Loading reviews…</p></div><div id="review-cta"></div><div class="rv-else"><p class="meta">Read what people say elsewhere</p><div class="rv-links"><a class="rv-link" href="https://www.google.com/maps/search/?api=1&amp;query=${encodeURIComponent(p.name + ' ' + (p.postcode || p.area || 'Bordon'))}" rel="noopener nofollow" target="_blank"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></svg><span>Google Maps</span></a><a class="rv-link" href="https://www.tripadvisor.co.uk/Search?q=${encodeURIComponent(p.name + ' ' + (p.postcode || p.area || 'Bordon'))}" rel="noopener nofollow" target="_blank"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/><path d="M9 11h.01M12 11h.01M15 11h.01"/></svg><span>Tripadvisor</span></a></div></div></div>
@@ -404,7 +411,7 @@ ${groups.map(([c, l]) => `<section class="sec" style="padding-bottom:0"><div cla
     body: `<section class="ph dk"><div class="wrap"><h1>Search</h1><form class="search" role="search" style="margin-top:20px" id="s-form"><label class="sr" for="s-q">Search woolmer</label><input id="s-q" name="q" type="search" placeholder="Name, type of food or village" autocomplete="off"><button class="btn btn-fountain" type="submit">Search</button></form></div></section>
 <section class="sec" style="padding-top:28px"><div class="wrap"><p class="muted" id="s-count" aria-live="polite"></p><div class="grid" id="s-results"></div></div></section>`,
   });
-  files['places.json'] = JSON.stringify(places.map(p => ({ s: p.slug, n: p.name, c: p.category, a: p.area || '', t: (p.tags || []).join(' '), d: (p.description || '').slice(0, 160), h: p.hygiene_rating, f: isFeatured(p) ? 1 : 0, v: p.claimed ? 1 : 0, la: p.lat ? +(+p.lat).toFixed(5) : undefined, lo: p.lng ? +(+p.lng).toFixed(5) : undefined, o: p.hours && Object.values(p.hours).some(v => v && !/closed/i.test(v)) ? p.hours : undefined })));
+  files['places.json'] = JSON.stringify(places.map(p => ({ s: p.slug, n: p.name, c: p.category, a: p.area || '', t: (p.tags || []).join(' '), d: (p.description || '').slice(0, 160), h: p.hygiene_rating, f: isFeatured(p) ? 1 : 0, v: p.claimed ? 1 : 0, la: p.lat ? +(+p.lat).toFixed(5) : undefined, lo: p.lng ? +(+p.lng).toFixed(5) : undefined, o: p.hours && Object.values(p.hours).some(v => v && !/closed/i.test(v)) ? p.hours : undefined, ph: photo1(p) ? photo1(p).src : undefined, k: catBySlug[p.category] ? catBySlug[p.category].slug : undefined })));
 
   // ask the town
   files['ask/index.html'] = page({

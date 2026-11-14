@@ -59,10 +59,14 @@
     var x = Math.sin(dLa / 2) * Math.sin(dLa / 2) + Math.cos(a.la * r) * Math.cos(b.la * r) * Math.sin(dLo / 2) * Math.sin(dLo / 2);
     return 2 * R * Math.asin(Math.sqrt(x));
   };
+  WB.art = function (p) {
+    if (p.ph) return '<div class="art has-photo"><img src="' + esc(p.ph) + '" alt="' + esc(p.n) + '" loading="lazy" decoding="async">';
+    return '<div class="art art-c" data-cat="' + esc(p.k || '') + '"><span class="initial" aria-hidden="true">' + esc(p.n.replace(/^the\s+/i, '')[0] || '') + '</span>';
+  };
   WB.appCard = function (p, dist) {
     var open = WB.openNow(p.o);
     var bits = [p.c, p.a].filter(Boolean).join(' · ');
-    return '<a class="card" href="/p/' + esc(p.s) + '/"><div class="art"><span class="initial" aria-hidden="true">' + esc(p.n.replace(/^the\s+/i, '')[0] || '') + '</span>' +
+    return '<a class="card" href="/p/' + esc(p.s) + '/">' + WB.art(p) +
       (p.f ? '<span class="badge badge-f">Featured</span>' : p.v ? '<span class="badge badge-v">Owner-verified</span>' : '') + '</div><div class="body"><h3>' + esc(p.n) + '</h3><span class="meta">' + esc(bits) + '</span>' +
       '<div class="tags">' + (open === true ? '<span class="open-now">Open now</span>' : open === false ? '<span class="closed-now">Closed now</span>' : '') +
       (dist != null ? '<span class="tag">' + (dist < 0.1 ? 'Under 0.1 mi' : dist.toFixed(1) + ' mi') + '</span>' : '') +

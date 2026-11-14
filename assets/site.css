@@ -353,3 +353,31 @@ button.chip{font:inherit;font-size:13px;cursor:pointer}
 .suggest .sg-all{font-weight:700;color:var(--teal-d);border-bottom:0}
 @media (prefers-reduced-motion:reduce){.live-dot{animation:none}}
 .search input:focus{outline:none}
+
+/* ---------- card art: photos and category artwork ---------- */
+.card .art{position:relative;overflow:hidden}
+.card .art.has-photo{padding:12px;background:var(--navy)}
+.card .art.has-photo img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:transform .6s cubic-bezier(.2,.7,.2,1)}
+.card:hover .art.has-photo img{transform:scale(1.06)}
+.card .art.has-photo .badge{position:relative;z-index:1;margin-left:auto}
+.art-c{--a:#D8EFEE;--b:#BFE3E1;--i:#0E6E69;background:radial-gradient(120% 140% at 100% 0%,var(--b) 0%,transparent 60%),linear-gradient(135deg,var(--a),var(--a))!important}
+.art-c .art-ico{position:absolute;right:-6%;top:-18%;width:62%;height:auto;color:var(--i);opacity:.16;transform:rotate(-12deg);transition:transform .6s cubic-bezier(.2,.7,.2,1),opacity .3s}
+.card:hover .art-c .art-ico{transform:rotate(-4deg) scale(1.08);opacity:.24}
+.art-c .initial{color:var(--i)!important;opacity:.55!important}
+.art-c[data-cat=takeaways]{--a:#FFE9DC;--b:#FFD3B8;--i:#C2410C}
+.art-c[data-cat=pubs-bars]{--a:#F3E8D6;--b:#E7D2AE;--i:#8A5A12}
+.art-c[data-cat=cafes-restaurants]{--a:#F7E4DF;--b:#EFC9BF;--i:#9A3B26}
+.art-c[data-cat=supermarkets],.art-c[data-cat=shops]{--a:#E3ECF7;--b:#C8D9EF;--i:#1F4E8C}
+.art-c[data-cat=food-catering],.art-c[data-cat=local-producers]{--a:#EAF3DD;--b:#D2E7B6;--i:#4B6F14}
+.art-c[data-cat=places-to-stay]{--a:#ECE6F6;--b:#D8CCEE;--i:#5B3E96}
+.art-c[data-cat=hair-beauty]{--a:#F9E3EE;--b:#F1C6DC;--i:#9D2C68}
+.art-c[data-cat=health-care]{--a:#DFF3EC;--b:#BFE7D8;--i:#17775A}
+.art-c[data-cat=motoring]{--a:#E6E9EE;--b:#CDD4DE;--i:#3B4A5E}
+.art-c[data-cat=sport-fitness]{--a:#E0F0FA;--b:#BEE0F4;--i:#0B6A9E}
+.art-c[data-cat=services]{--a:#EDEBE6;--b:#DAD5CA;--i:#5E5543}
+.art-c[data-cat=community]{--a:#FCEFD8;--b:#F7DCAA;--i:#9A6400}
+.art-c[data-cat=parks-outdoors]{--a:#E1F1E1;--b:#BFE0BF;--i:#2E6B2E}
+.place-photo{margin:0 0 20px;border-radius:var(--r);overflow:hidden;background:var(--navy)}
+.place-photo img{display:block;width:100%;max-height:420px;object-fit:cover}
+.place-photo figcaption{font-size:12px;color:#B9C6D2;padding:8px 14px}
+.place-photo figcaption a{color:inherit}
