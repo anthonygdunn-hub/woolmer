@@ -70,8 +70,9 @@ const CATS = [
   { name: 'Food & catering', blurb: 'Caterers, street food and event food', icon: 'chef' },
   { name: 'Local producers', blurb: 'Wine, beer and food made here', icon: 'leaf' },
   { name: 'Places to stay', blurb: 'B&Bs and hotels', icon: 'bed' },
-  { name: 'Hair & beauty', blurb: 'Hairdressers, barbers, nails, beauty and tattoos', icon: 'scissors' },
-  { name: 'Health & care', blurb: 'GP surgeries, dentists, pharmacies and vets', icon: 'health' },
+  { name: 'Doctors, dentists & vets', blurb: 'GP surgeries, Chase hospital, dentists, pharmacies, opticians, physios and vets', icon: 'health' },
+  { name: 'Health & beauty', blurb: 'Massage, spas, nails, facials and beauty treatments', icon: 'spa' },
+  { name: 'Hair & barbers', blurb: 'Hairdressers, barbers and tattoos', icon: 'scissors' },
   { name: 'Motoring', blurb: 'Garages, MOTs, petrol stations and bikes', icon: 'car' },
   { name: 'Sport & fitness', blurb: 'Gyms, the leisure centre and golf', icon: 'run' },
   { name: 'Services', blurb: 'Solicitors, estate agents, trades and advice', icon: 'tool' },
@@ -91,6 +92,7 @@ const ICONS = {
   chef: '<path d="M6 10a3 3 0 1 1 2-5 3 3 0 0 1 4 0 3 3 0 1 1 2 5v6H6z"/>',
   leaf: '<path d="M4 16C4 8 9 4 16 4c0 7-4 12-12 12zM4 16l7-7"/>',
   bed: '<path d="M3 15V6M3 11h14v4M17 15v-3a2 2 0 0 0-2-2H9v1"/>',
+  spa: '<path d="M10 16c-3.5 0-6-2.2-6-5 2.5 0 4.5 1 6 3 1.5-2 3.5-3 6-3 0 2.8-2.5 5-6 5zM10 14c-1.6-1.8-1.6-5.2 0-8 1.6 2.8 1.6 6.2 0 8z"/>',
   scissors: '<circle cx="6" cy="6" r="2.5"/><circle cx="6" cy="14" r="2.5"/><path d="M8 7.5l9 7M8 12.5l9-7"/>',
   health: '<path d="M10 16.5s-6-3.6-6-8.2A3.3 3.3 0 0 1 10 6a3.3 3.3 0 0 1 6 2.3c0 4.6-6 8.2-6 8.2z"/>',
   car: '<path d="M3 13v-2l2-5h10l2 5v2zM3 13v2h2.5v-2M14.5 13v2H17v-2M6 10.5h.01M14 10.5h.01"/>',
@@ -393,6 +395,11 @@ ${groups.map(([c, l]) => `<section class="sec" style="padding-bottom:0"><div cla
   </aside>
 </div></div></section>`,
     });
+  }
+
+  // old category URLs
+  for (const [from, to] of [['health-and-care', 'doctors-dentists-and-vets'], ['hair-and-beauty', 'hair-and-barbers']]) {
+    files[`${from}/index.html`] = `<!doctype html><meta charset="utf-8"><title>Moved</title><link rel="canonical" href="https://woolmer.info/${to}/"><meta name="robots" content="noindex"><meta http-equiv="refresh" content="0;url=/${to}/"><a href="/${to}/">This page has moved</a>`;
   }
 
   // local info

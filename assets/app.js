@@ -289,7 +289,7 @@
   if (!live && !box) return;
   var esc = WB.esc || function (s) { return String(s); };
   var norm = function (s) { return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9 ]+/g, ' '); };
-  var syn = { chippy: 'fish chips', chinese: 'chinese wok china', indian: 'indian curry spice', pub: 'pub bar inn', coffee: 'coffee cafe', kebab: 'kebab bbq', barber: 'hair barber', doctor: 'surgery', gp: 'surgery', petrol: 'fuel shell esso jet', tip: 'recycling', park: 'park inclosure play' };
+  var syn = { chippy: 'fish chips', chinese: 'chinese wok china', indian: 'indian curry spice', pub: 'pub bar inn', coffee: 'coffee cafe', kebab: 'kebab bbq', barber: 'hair barber', doctor: 'surgery hospital', gp: 'surgery', hospital: 'hospital chase', massage: 'massage spa therapy', spa: 'spa massage wellness', nails: 'nails nail', optician: 'opticians eyecare optician', physio: 'physiotherapy physio osteopathy', dentist: 'dental dentist', vet: 'veterinary vet', petrol: 'fuel shell esso jet', tip: 'recycling', park: 'park inclosure play' };
   WB.places().then(function (all) {
     // live line
     if (live) {

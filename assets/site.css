@@ -365,18 +365,19 @@ button.chip{font:inherit;font-size:13px;cursor:pointer}
 .card:hover .art-c .art-ico{transform:rotate(-4deg) scale(1.08);opacity:.24}
 .art-c .initial{color:var(--i)!important;opacity:.55!important}
 .art-c[data-cat=takeaways]{--a:#FFE9DC;--b:#FFD3B8;--i:#C2410C}
-.art-c[data-cat=pubs-bars]{--a:#F3E8D6;--b:#E7D2AE;--i:#8A5A12}
-.art-c[data-cat=cafes-restaurants]{--a:#F7E4DF;--b:#EFC9BF;--i:#9A3B26}
+.art-c[data-cat=pubs-and-bars]{--a:#F3E8D6;--b:#E7D2AE;--i:#8A5A12}
+.art-c[data-cat=cafes-and-restaurants]{--a:#F7E4DF;--b:#EFC9BF;--i:#9A3B26}
 .art-c[data-cat=supermarkets],.art-c[data-cat=shops]{--a:#E3ECF7;--b:#C8D9EF;--i:#1F4E8C}
-.art-c[data-cat=food-catering],.art-c[data-cat=local-producers]{--a:#EAF3DD;--b:#D2E7B6;--i:#4B6F14}
+.art-c[data-cat=food-and-catering],.art-c[data-cat=local-producers]{--a:#EAF3DD;--b:#D2E7B6;--i:#4B6F14}
 .art-c[data-cat=places-to-stay]{--a:#ECE6F6;--b:#D8CCEE;--i:#5B3E96}
-.art-c[data-cat=hair-beauty]{--a:#F9E3EE;--b:#F1C6DC;--i:#9D2C68}
-.art-c[data-cat=health-care]{--a:#DFF3EC;--b:#BFE7D8;--i:#17775A}
+.art-c[data-cat=hair-and-barbers]{--a:#F9E3EE;--b:#F1C6DC;--i:#9D2C68}
+.art-c[data-cat=health-and-beauty]{--a:#F4E6F7;--b:#E6CCEE;--i:#7A3A8C}
+.art-c[data-cat=doctors-dentists-and-vets]{--a:#DFF3EC;--b:#BFE7D8;--i:#17775A}
 .art-c[data-cat=motoring]{--a:#E6E9EE;--b:#CDD4DE;--i:#3B4A5E}
-.art-c[data-cat=sport-fitness]{--a:#E0F0FA;--b:#BEE0F4;--i:#0B6A9E}
+.art-c[data-cat=sport-and-fitness]{--a:#E0F0FA;--b:#BEE0F4;--i:#0B6A9E}
 .art-c[data-cat=services]{--a:#EDEBE6;--b:#DAD5CA;--i:#5E5543}
 .art-c[data-cat=community]{--a:#FCEFD8;--b:#F7DCAA;--i:#9A6400}
-.art-c[data-cat=parks-outdoors]{--a:#E1F1E1;--b:#BFE0BF;--i:#2E6B2E}
+.art-c[data-cat=parks-and-outdoors]{--a:#E1F1E1;--b:#BFE0BF;--i:#2E6B2E}
 .place-photo{margin:0 0 20px;border-radius:var(--r);overflow:hidden;background:var(--navy)}
 .place-photo img{display:block;width:100%;max-height:420px;object-fit:cover}
 .place-photo figcaption{font-size:12px;color:#B9C6D2;padding:8px 14px}
