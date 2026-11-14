@@ -222,9 +222,8 @@
       var hours = p.hours || {};
       var box = document.createElement('div');
       box.className = 'panel'; box.style.marginTop = '24px'; box.style.background = 'var(--page)';
-      var featured = p.featured_until && p.featured_until >= new Date().toISOString().slice(0, 10);
       box.innerHTML = '<div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:baseline"><h2 style="font-size:26px">' + esc(p.name) + '</h2><a href="/p/' + esc(p.slug) + '/">View listing</a></div>' +
-        (featured ? '<p class="notice">Featured until ' + esc(p.featured_until) + '.</p>' : '<p class="notice">Want to be top of ' + esc(p.category) + '? <a href="/business/#featured">Get featured</a>.</p>') +
+        (p.website ? '' : '<p class="notice">No website yet? <a href="https://dunnworks.io/?utm_source=woolmer&utm_medium=referral&utm_campaign=owner">Dunnworks</a>, who built woolmer, makes fast websites for local businesses from £750, with no monthly fees. Ask for a free mock-up.</p>') +
         '<form class="form" data-f>' +
         '<div class="row2"><label>Phone<input name="phone" maxlength="40" value="' + esc(p.phone || '') + '"></label><label>Website<input name="website" type="url" maxlength="200" placeholder="https://" value="' + esc(p.website || '') + '"></label></div>' +
         '<label>Online menu or ordering link (optional)<input name="menu_url" type="url" maxlength="300" placeholder="https://, e.g. your Just Eat or Deliveroo page" value="' + esc(p.menu_url || '') + '"></label>' +
@@ -236,10 +235,10 @@
         '<label>Menu<textarea name="menu" rows="10" style="font-family:ui-monospace,Menlo,monospace;font-size:13px" placeholder="## Starters\nSpring rolls | 3.50 | Vegetable\n## Mains\nChicken curry | 8.90">' + esc(menuToText(p.menu)) + '</textarea><span class="muted" style="font-size:13px;font-weight:400">A line starting ## is a section. Each item is: name | price | description.</span></label>' +
         '<button class="btn btn-navy" type="submit" style="align-self:flex-start">Save changes</button><p class="msg" role="status"></p><p class="muted" style="font-size:13px;margin:0">Changes show on your listing within the hour.</p></form>' +
         '<h3 style="margin-top:28px">Photos</h3><p class="muted" style="font-size:14px">Up to 6. The first one shows on your card and at the top of your listing. Only upload photos you took or have permission to use.</p><div class="ph-grid" data-ph></div><label class="btn btn-ghost btn-sm" style="align-self:flex-start;cursor:pointer;margin-top:10px">Add photos<input type="file" accept="image/*" multiple data-phin hidden></label><p class="msg" data-phmsg role="status"></p>' +
-        '<h3 style="margin-top:28px">Deals</h3>' + (featured
-          ? '<p class="muted" style="font-size:14px">Post up to 3 offers at a time. They show on your listing and in Local deals on the home page while you are Featured.</p><div data-deals><p class="muted">Loading…</p></div>' +
+        '<h3 style="margin-top:28px">Deals</h3>' + (true
+          ? '<p class="muted" style="font-size:14px">Post up to 3 offers at a time. They show on your listing and in Local deals on the home page. Free.</p><div data-deals><p class="muted">Loading…</p></div>' +
             '<form class="form" data-dealf style="margin-top:10px"><label>Offer<input name="title" maxlength="80" required placeholder="2 large pizzas for £20 on Tuesdays"></label><label>Details (optional)<input name="details" maxlength="300" placeholder="Collection only. Mention woolmer."></label><label>Ends on<input name="ends" type="date" required></label><button class="btn btn-navy btn-sm" style="align-self:flex-start">Post deal</button><p class="msg" role="status"></p></form>'
-          : '<p class="notice">Featured businesses can post deals that appear on the woolmer home page. <a href="/business/#featured">Get featured</a>.</p>') +
+          : '') +
         '<h3 style="margin-top:28px">Reviews</h3><div data-rv><p class="muted">Loading…</p></div>';
       document.getElementById('owned').appendChild(box);
       var f = box.querySelector('[data-f]');
@@ -259,7 +258,7 @@
         dealf.addEventListener('submit', function (e) {
           e.preventDefault(); var m = dealf.querySelector('.msg');
           sb.from('wb_deals').insert({ place_id: p.id, title: dealf.title.value.trim(), details: dealf.details.value.trim() || null, ends_on: dealf.ends.value }).then(function (r) {
-            if (r.error) { msg(m, false, /row-level|policy/i.test(r.error.message) ? 'You can have up to 3 live deals, ending within 90 days, while Featured.' : niceErr(r.error)); return; }
+            if (r.error) { msg(m, false, /row-level|policy/i.test(r.error.message) ? 'You can have up to 3 live deals at a time, each ending within 90 days.' : niceErr(r.error)); return; }
             msg(m, true, 'Posted. It shows on the site straight away.'); dealf.title.value = ''; dealf.details.value = ''; loadDeals();
           });
         });

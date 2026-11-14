@@ -44,7 +44,7 @@ async function load() {
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 const slugify = s => String(s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/&/g, 'and').replace(/['’]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 const today = new Date().toISOString().slice(0, 10);
-const isFeatured = p => p.featured_until && p.featured_until >= today;
+const isFeatured = () => false; // woolmer is free for every business: no paid placement
 
 // ------------------------------------------------------------------ events (times shown in UK time)
 const TZ = 'Europe/London';
@@ -192,11 +192,11 @@ ${body}
     </div>
     <div class="cols">
       <div><strong>Explore</strong>${CATS.slice(0, 5).map(c => `<a href="/${c.slug}/">${esc(c.name)}</a>`).join('')}<a href="/whats-on/">What's on</a><a href="/local/">Bins, tip &amp; local info</a><a href="/search/">Search</a></div>
-      <div><strong>Businesses</strong><a href="/business/">Claim your listing</a><a href="/business/#featured">Get featured</a><a href="/account/">Owner sign in</a></div>
+      <div><strong>Businesses</strong><a href="/business/">Claim your listing</a><a href="/add/">Add your business</a><a href="/account/">Owner sign in</a></div>
       <div><strong>woolmer</strong><a href="/guidelines/">Review guidelines</a><a href="/terms/">Terms</a><a href="/privacy/">Privacy</a><a href="mailto:info@woolmer.info">info@woolmer.info</a></div>
     </div>
     <div class="dw-credit"><span>Website by <a href="https://dunnworks.io/?utm_source=woolmer&utm_medium=referral&utm_campaign=footer">Dunnworks</a>, a Bordon web designer.</span> <a class="dw-cta" href="https://dunnworks.io/?utm_source=woolmer&utm_medium=referral&utm_campaign=footer">Need a website for your business? From £750 →</a></div>
-    <p class="small">Food hygiene ratings and some business details come from the Food Standards Agency and contain public sector information licensed under the <a href="https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/">Open Government Licence v3.0</a>. Some other listings use data © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>, available under the <a href="https://opendatacommons.org/licenses/odbl/">Open Database Licence</a>. Featured listings are paid placements and are always labelled. © ${new Date().getFullYear()} woolmer</p>
+    <p class="small">Food hygiene ratings and some business details come from the Food Standards Agency and contain public sector information licensed under the <a href="https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/">Open Government Licence v3.0</a>. Some other listings use data © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>, available under the <a href="https://opendatacommons.org/licenses/odbl/">Open Database Licence</a>. woolmer is free for every business and sells no placements: the order of listings is never paid for. © ${new Date().getFullYear()} woolmer</p>
   </div>
 </footer>
 <script>window.WB={url:${JSON.stringify(SB_URL)},key:${JSON.stringify(SB_KEY)}};</script>
@@ -287,7 +287,7 @@ function build(data) {
   <div class="cats">${CATS.filter(c => counts[c.name] || c.open).map((c, i) => `<a class="cat" style="--i:${i}" href="/${c.slug}/"><span class="ico">${icon(c.icon)}</span><span><b>${esc(c.name)}</b><span>${counts[c.name] ? `${counts[c.name]} place${counts[c.name] > 1 ? 's' : ''}` : 'New: add yours free'}</span></span></a>`).join('')}</div>
 </div></section>
 <section class="sec" id="deals-home" hidden><div class="wrap">
-  <div class="sec-head"><div><p class="eyebrow" style="color:var(--teal-d)">From our Featured businesses</p><h2>Local deals</h2></div><a href="/business/#featured">Post a deal</a></div>
+  <div class="sec-head"><div><p class="eyebrow" style="color:var(--teal-d)">From local businesses</p><h2>Local deals</h2></div><a href="/business/">Post a deal free</a></div>
   <div class="deals" id="deals-list"></div>
 </div></section>
 <section class="sec" id="wo-home"${upcoming.length ? '' : ' hidden'}><div class="wrap">
@@ -503,13 +503,12 @@ ${groups.map(([c, l]) => `<section class="sec" style="padding-bottom:0"><div cla
   });
 
   // business
-  const price = settings.featured_price_gbp ?? 20;
   files['business/index.html'] = page({
-    title: 'For local businesses — woolmer', desc: `Claim your free woolmer listing: add your menu, opening hours and photos${REV ? ', reply to reviews' : ''}, and get featured in front of Whitehill & Bordon.`, path: '/business/',
+    title: 'For local businesses — woolmer', desc: `Claim your free woolmer listing: add your menu, opening hours and photos${REV ? ', reply to reviews' : ''}, and post offers. Free for every local business.`, path: '/business/',
     body: `<section class="ph dk"><div class="wrap"><h1>Your business, in front of the whole town</h1><p>woolmer lists local businesses across Whitehill &amp; Bordon from public records, including the Food Standards Agency and OpenStreetMap. Claim yours to make it yours.</p></div></section>
 <section class="sec"><div class="wrap"><div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(280px,1fr))">
   <div class="panel"><p class="eyebrow" style="color:var(--teal-d)">Free, forever</p><h2>Claim your listing</h2><ul style="padding-left:18px;margin:12px 0 20px"><li>Add your opening hours, phone and website</li><li>Put your full menu online</li>${REV ? '<li>Reply to reviews and answer questions</li>' : ''}<li>Get the "Owner-verified" badge</li></ul><a class="btn btn-navy" href="/search/">Find your business</a><p class="muted" style="font-size:14px;margin:12px 0 0">Not listed? <a href="/add/">Add your business free</a>.</p></div>
-  <div class="panel panel-dk dk" id="featured"><p class="eyebrow">£${esc(price)} a month</p><h2>Get featured</h2><ul style="padding-left:18px;margin:12px 0 20px;color:var(--od2)"><li>Top of your category, with a Featured badge</li><li>On the woolmer home page</li><li>Post your own deals and offers, shown on the home page and in the app</li><li>Shared on woolmer's Facebook and Instagram</li><li>No contract, cancel any month</li></ul><a class="btn btn-fountain" href="mailto:info@woolmer.info?subject=Featured%20listing%20on%20woolmer">Ask about featuring</a></div>
+  <div class="panel panel-dk dk" id="free"><p class="eyebrow">Free, no catch</p><h2>Everything else is free too</h2><ul style="padding-left:18px;margin:12px 0 20px;color:var(--od2)"><li>Post your own deals and offers, shown on the home page and your listing</li><li>Add your events to What's on</li><li>Photos, menu, ordering link and opening hours</li><li>No paid placements: nobody can pay to sit above you</li><li>No contract, no card details, nothing to cancel</li></ul><a class="btn btn-fountain" href="/search/">Claim your listing</a></div>
 </div>
 <div class="panel dw-panel" style="margin-top:20px" id="website"><div class="dw-grid"><div><p class="eyebrow" style="color:var(--teal-d)">From the people who built woolmer</p><h2>Need a proper website?</h2><p style="margin:8px 0 14px">woolmer was designed and built by <a href="https://dunnworks.io/?utm_source=woolmer&utm_medium=referral&utm_campaign=business">Dunnworks</a>, a web designer here in Bordon. If your business has no website, or one you're paying monthly for and don't love, Dunnworks can build you a fast one that you own.</p><ul style="padding-left:18px;margin:0 0 18px"><li>Hand-coded, quick on phones and good for Google</li><li>From £750, no monthly platform fees, and you own the files</li><li>Menus, online ordering, bookings and events if you need them</li><li>A free mock-up of your new site before you commit</li><li>Local: we can meet for a coffee in Bordon</li></ul><a class="btn btn-navy" href="https://dunnworks.io/?utm_source=woolmer&utm_medium=referral&utm_campaign=business">See Dunnworks</a> <a class="btn btn-ghost" href="mailto:info@woolmer.info?subject=Website%20for%20my%20business">Ask for a free mock-up</a></div></div></div>
 </div></section>`,

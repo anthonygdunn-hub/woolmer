@@ -342,7 +342,7 @@
   }).catch(function () {});
 })();
 
-/* ---------- Deals from Featured businesses ---------- */
+/* ---------- Deals from local businesses ---------- */
 (function () {
   var list = document.getElementById('deals-list'), slot = document.getElementById('deal-slot'), place = document.getElementById('place');
   if ((!list && !slot) || !WB.url) return;

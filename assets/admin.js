@@ -1,7 +1,7 @@
 /* woolmer admin — only works for info@dunnworks.io (database rules enforce it, this is just the screen) */
 (function () {
   var root = document.getElementById('adm'), WB = window.WB, esc = WB.esc, sb, tab = location.hash.slice(1) || 'claims';
-  var TABS = [['claims', 'Claims'], ['subs', 'New listings'], ['mod', 'Moderation'], ['reports', 'Reports'], ['featured', 'Featured'], ['events', "What's on"], ['walk', 'Street walk'], ['places', 'Listings'], ['signups', 'Sign-ups'], ['stats', 'Visitors'], ['alerts', 'Alerts'], ['settings', 'Settings']];
+  var TABS = [['claims', 'Claims'], ['subs', 'New listings'], ['mod', 'Moderation'], ['reports', 'Reports'], ['events', "What's on"], ['walk', 'Street walk'], ['places', 'Listings'], ['signups', 'Sign-ups'], ['stats', 'Visitors'], ['alerts', 'Alerts'], ['settings', 'Settings']];
   function when(d) { return d ? new Date(d).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''; }
   function err(e) { alert(String(e && e.message || e)); }
   function chk(r) { if (r.error) throw r.error; return r.data; }
