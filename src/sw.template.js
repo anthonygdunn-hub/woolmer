@@ -44,7 +44,7 @@ self.addEventListener('fetch', (e) => {
   e.respondWith(caches.match(req).then((hit) => hit || fetch(req).then((res) => {
     if (res.ok && /^\/(assets|icons)\//.test(url.pathname)) { const copy = res.clone(); caches.open(VERSION).then((c) => c.put(req, copy)); }
     return res;
-  })));
+  }).catch(() => caches.match(req, { ignoreSearch: true }))));
 });
 
 // alerts: show them, and open the right page when tapped

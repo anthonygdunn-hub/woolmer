@@ -497,6 +497,8 @@ ${groups.map(([c, l]) => `<section class="sec" style="padding-bottom:0"><div cla
 const data = await load();
 fs.rmSync(OUT, { recursive: true, force: true });
 const files = build(data);
+const ASSET_V = new Date().toISOString().replace(/\D/g, '').slice(0, 12);
+for (const k of Object.keys(files)) if (k.endsWith('.html')) files[k] = files[k].replace(/(["'])(\/assets\/[\w-]+\.(?:css|js))\1/g, (m, q, u) => q + u + '?v=' + ASSET_V + q);
 for (const [f, c] of Object.entries(files)) {
   const p = path.join(OUT, f);
   fs.mkdirSync(path.dirname(p), { recursive: true });
