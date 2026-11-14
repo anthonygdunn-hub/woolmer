@@ -83,7 +83,7 @@ const CATS = [
   { name: 'Parks & outdoors', blurb: 'Parks, play areas, woods and nature reserves', icon: 'tree' },
 ].map(c => ({ ...c, slug: slugify(c.name) }));
 const catBySlug = Object.fromEntries(CATS.map(c => [c.name, c]));
-const AREAS = ['Bordon', 'Whitehill', 'Lindford', 'Headley', 'Headley Down', 'Kingsley', 'Oakhanger', 'Standford', 'Frith End', 'Blackmoor'];
+const AREAS = ['Bordon', 'Whitehill', 'Lindford', 'Headley', 'Headley Down', 'Kingsley', 'Oakhanger', 'Standford', 'Frith End', 'Blackmoor', 'Passfield', 'Conford'];
 
 const ICONS = {
   tree: '<path d="M10 2l5 7h-3l4 5H4l4-5H5zM10 14v4"/>',
@@ -283,7 +283,7 @@ function build(data) {
     path: '/',
     jsonld: { '@context': 'https://schema.org', '@type': 'WebSite', name: 'woolmer', url: SITE + '/', potentialAction: { '@type': 'SearchAction', target: SITE + '/search/?q={q}', 'query-input': 'required name=q' } },
     body: `<section class="hero hero-photo dk"><div class="hero-bg" aria-hidden="true"></div><div class="wrap">
-  <p class="eyebrow">Whitehill · Bordon · Lindford · Headley Down</p>
+  <p class="eyebrow">Whitehill · Bordon · Lindford · Headley Down · Passfield</p>
   <h1>Everything local, finally in <span>one place.</span></h1>
   <p class="lead">${places.length} local takeaways, pubs, cafés and shops, with maps, food hygiene ratings, opening hours and menus${REV ? ', and answers from people who live here' : ''}.</p>
   <div class="live" id="live" aria-live="polite" hidden></div>
