@@ -124,11 +124,25 @@
     var f = document.getElementById('pf');
     f.onsubmit = function (e) {
       e.preventDefault(); var q = f.q.value.trim().replace(/[%,()]/g, '');
-      sb.from('wb_places').select('id,name,slug,category,area,postcode,listable,listable_note,claimed').or('name.ilike.%' + q + '%,postcode.ilike.%' + q + '%').order('name').limit(40).then(function (r) {
+      sb.from('wb_places').select('id,name,slug,category,area,postcode,listable,listable_note,claimed,phone,website,menu_url').or('name.ilike.%' + q + '%,postcode.ilike.%' + q + '%').order('name').limit(40).then(function (r) {
         document.getElementById('pr').innerHTML = (r.data || []).map(function (p) {
           return '<div class="item"><strong>' + esc(p.name) + '</strong> <span class="meta">' + esc(p.category) + ' · ' + esc(p.area || '') + ' · ' + esc(p.postcode || '') + (p.claimed ? ' · claimed' : '') + ' · ' + (p.listable ? 'public' : 'hidden' + (p.listable_note ? ' (' + esc(p.listable_note) + ')' : '')) + '</span>' +
-            '<div class="acts"><button class="btn btn-ghost btn-sm" data-vis="' + p.id + '" data-to="' + (!p.listable) + '">' + (p.listable ? 'Hide' : 'Make public') + '</button>' + (p.listable ? '<a class="btn btn-ghost btn-sm" href="/p/' + esc(p.slug) + '/" target="_blank">View</a>' : '') + '</div></div>';
+            '<div class="acts"><button class="btn btn-ghost btn-sm" data-vis="' + p.id + '" data-to="' + (!p.listable) + '">' + (p.listable ? 'Hide' : 'Make public') + '</button>' + (p.listable ? '<a class="btn btn-ghost btn-sm" href="/p/' + esc(p.slug) + '/" target="_blank">View</a>' : '') + '</div>' +
+            '<details style="margin-top:8px"><summary class="linkish">Edit phone, website and menu link</summary><form class="form" data-ed="' + p.id + '" style="margin-top:8px">' +
+            '<label>Phone<input name="phone" maxlength="40" value="' + esc(p.phone || '') + '"></label>' +
+            '<label>Website<input name="website" type="url" maxlength="200" placeholder="https://" value="' + esc(p.website || '') + '"></label>' +
+            '<label>Menu &amp; order link (own ordering site, Just Eat, Deliveroo, Uber Eats)<input name="menu_url" type="url" maxlength="300" placeholder="https://" value="' + esc(p.menu_url || '') + '"></label>' +
+            '<button class="btn btn-navy btn-sm" style="align-self:flex-start">Save</button><p class="meta" data-m role="status"></p></form></details></div>';
         }).join('') || '<p class="muted">Nothing found.</p>';
+        document.querySelectorAll('form[data-ed]').forEach(function (ef) {
+          ef.onsubmit = function (ev) {
+            ev.preventDefault(); var m = ef.querySelector('[data-m]'), mu = ef.menu_url.value.trim();
+            if (mu && !/^https:\/\//.test(mu)) { m.textContent = 'Menu link must start with https://'; return; }
+            m.textContent = 'Saving…';
+            sb.from('wb_places').update({ phone: ef.phone.value.trim() || null, website: ef.website.value.trim() || null, menu_url: mu || null }).eq('id', +ef.dataset.ed)
+              .then(function (r3) { m.textContent = r3.error ? 'Error: ' + r3.error.message : 'Saved. The site updates within the hour.'; });
+          };
+        });
         document.querySelectorAll('[data-vis]').forEach(function (b) { b.onclick = function () { b.disabled = true; sb.from('wb_places').update({ listable: b.dataset.to === 'true' }).eq('id', +b.dataset.vis).then(function (r2) { if (r2.error) return err(r2.error); f.requestSubmit(); }); }; });
       });
     };

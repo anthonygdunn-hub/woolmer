@@ -75,7 +75,7 @@
   }
 
   function getPlace(field, value) {
-    return sb.from('wb_places').select('id,slug,name,category,area,address,postcode,claimed,phone,website,email,description,hours,menu,tags,featured_until').eq(field, value).maybeSingle().then(function (r) { return r.data; });
+    return sb.from('wb_places').select('id,slug,name,category,area,address,postcode,claimed,phone,website,menu_url,email,description,hours,menu,tags,featured_until').eq(field, value).maybeSingle().then(function (r) { return r.data; });
   }
 
   // ---------------------------------------------------------------- routes
@@ -227,6 +227,7 @@
         (featured ? '<p class="notice">Featured until ' + esc(p.featured_until) + '.</p>' : '<p class="notice">Want to be top of ' + esc(p.category) + '? <a href="/business/#featured">Get featured</a>.</p>') +
         '<form class="form" data-f>' +
         '<div class="row2"><label>Phone<input name="phone" maxlength="40" value="' + esc(p.phone || '') + '"></label><label>Website<input name="website" type="url" maxlength="200" placeholder="https://" value="' + esc(p.website || '') + '"></label></div>' +
+        '<label>Online menu or ordering link (optional)<input name="menu_url" type="url" maxlength="300" placeholder="https://, e.g. your Just Eat or Deliveroo page" value="' + esc(p.menu_url || '') + '"></label>' +
         '<label>Public email<input name="email" type="email" maxlength="200" value="' + esc(p.email || '') + '"></label>' +
         '<label>About your business<textarea name="description" rows="3" maxlength="1200">' + esc(p.description || '') + '</textarea></label>' +
         '<label>Tags, comma separated (e.g. Delivers, Vegan options, Dog friendly)<input name="tags" maxlength="300" value="' + esc((p.tags || []).join(', ')) + '"></label>' +
@@ -241,7 +242,7 @@
         e.preventDefault(); var m = f.querySelector('.msg');
         var h = {}; DAYS.forEach(function (d) { var v = f['h_' + d[0]].value.trim(); h[d[0]] = v || 'Closed'; });
         var allClosed = DAYS.every(function (d) { return h[d[0]] === 'Closed'; });
-        var payload = { phone: f.phone.value.trim() || null, website: f.website.value.trim() || null, email: f.email.value.trim() || null, description: f.description.value.trim() || null,
+        var payload = { phone: f.phone.value.trim() || null, website: f.website.value.trim() || null, menu_url: f.menu_url.value.trim(), email: f.email.value.trim() || null, description: f.description.value.trim() || null,
           tags: f.tags.value.split(',').map(function (t) { return t.trim(); }).filter(Boolean), hours: allClosed ? null : h, menu: textToMenu(f.menu.value) };
         if (!payload.menu.length) payload.menu = null;
         sb.rpc('wb_owner_update', { p_place: p.id, p: payload }).then(function (r) { msg(m, !r.error, r.error ? niceErr(r.error) : 'Saved.'); });
