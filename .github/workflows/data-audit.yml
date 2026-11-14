@@ -2,7 +2,7 @@ name: Data audit (manual)
 on:
   workflow_dispatch:
 permissions:
-  contents: read
+  contents: write
 jobs:
   fetch:
     runs-on: ubuntu-latest
@@ -11,9 +11,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: node scripts/fetch-data.mjs
-      - uses: actions/upload-artifact@v4
-        with:
-          name: audit
-          path: audit.json
-          retention-days: 3
+      - run: node scripts/fetch-data.mjs && mkdir -p data && mv audit.json data/audit.json
+      - name: Save results to the repo
+        run: |
+          git config user.name "woolmer-bot"
+          git config user.email "hello@woolmer.info"
+          git add data/audit.json
+          git commit -m "Data audit snapshot [skip ci]" || echo "no change"
+          git push
