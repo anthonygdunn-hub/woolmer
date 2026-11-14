@@ -58,7 +58,7 @@
     var items = pick.map(function (e) {
       var fl = flag(e) || f(e.starts_at, { weekday: 'short', day: 'numeric', month: 'short' });
       var where = e.place ? e.place.name : (e.venue || '');
-      return '<a class="es-item" href="/whats-on/"><span class="es-flag' + (fl === 'On now' ? ' live' : '') + '">' + esc(fl) + '</span><b>' + esc(e.title) + '</b><span class="es-meta">' + esc(when(e)) + (where ? ' · ' + esc(where) : '') + '</span></a>';
+      return '<a class="es-item" href="/whats-on/"><span class="es-flag' + (fl === 'On now' ? ' es-live' : '') + '">' + esc(fl) + '</span><b>' + esc(e.title) + '</b><span class="es-meta">' + esc(when(e)) + (where ? ' · ' + esc(where) : '') + '</span></a>';
     });
     strip.innerHTML = '<div class="wrap"><span class="es-label"><i aria-hidden="true"></i>What\'s on</span><div class="es-track" aria-live="polite">' + items.join('') + '</div><a class="es-all" href="/whats-on/">All events</a><button class="es-x" type="button" aria-label="Hide events">×</button></div>';
     strip.hidden = false;
