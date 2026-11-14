@@ -275,7 +275,7 @@ function build(data) {
   <div class="evs" id="wo-list" data-limit="6">${upcoming.slice(0, 6).map(e => evCard(e, byId)).join('')}</div>
 </div></section>
 <section class="sec"><div class="wrap">
-  <div class="sec-head"><div><p class="eyebrow" style="color:var(--teal-d)">${featured.length ? 'Featured' : 'Friday night, sorted'}</p><h2>${featured.length ? 'Featured local businesses' : 'Takeaways'}</h2></div><a href="/takeaways/">All takeaways</a></div>
+  <div class="sec-head"><div><p class="eyebrow" style="color:var(--teal-d)">${featured.length ? 'Featured' : '<span data-night>Tonight, sorted</span>'}</p><h2>${featured.length ? 'Featured local businesses' : 'Takeaways'}</h2></div><a href="/takeaways/">All takeaways</a></div>
   <div class="grid">${showcase.map(p => card(p, stats[p.id])).join('')}</div>
 </div></section>
 <section class="sec" style="padding-top:0"><div class="wrap"><div class="panel panel-dk dk" style="display:flex;flex-wrap:wrap;gap:24px;align-items:center;justify-content:space-between">

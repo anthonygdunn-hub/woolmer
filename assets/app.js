@@ -210,3 +210,10 @@
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
 })();
+
+/* "<Day> night, sorted" uses today's UK weekday */
+(function () {
+  var el = document.querySelector('[data-night]');
+  if (!el) return;
+  try { el.textContent = new Intl.DateTimeFormat('en-GB', { weekday: 'long', timeZone: 'Europe/London' }).format(new Date()) + ' night, sorted'; } catch (e) {}
+})();
