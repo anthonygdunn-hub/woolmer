@@ -217,3 +217,64 @@
   if (!el) return;
   try { el.textContent = new Intl.DateTimeFormat('en-GB', { weekday: 'long', timeZone: 'Europe/London' }).format(new Date()) + ' night, sorted'; } catch (e) {}
 })();
+
+/* ---------- Open today / closed today / hours not known ---------- */
+(function () {
+  var grids = document.querySelectorAll('[data-split]');
+  if (!grids.length || !window.WB || !WB.places) return;
+  var DAYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'], NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  var mins = function (t) { var p = String(t).trim().split(':'); return +p[0] * 60 + (+p[1] || 0); };
+  var nice = function (m) { m = m % 1440; if (m === 0) return 'midnight'; var h = Math.floor(m / 60), mm = m % 60, ap = h >= 12 ? 'pm' : 'am'; h = h % 12 || 12; return h + (mm ? '.' + (mm < 10 ? '0' : '') + mm : '') + ap; };
+  var ranges = function (hours, day) {
+    var v = String(hours[day] || ''); if (!v || /closed/i.test(v)) return [];
+    return v.split(',').map(function (r) { var x = r.trim().split('-'); if (x.length < 2) return null; var a = mins(x[0]), b = mins(x[1]); if (b <= a) b += 1440; return [a, b]; }).filter(Boolean);
+  };
+  function status(hours) {
+    if (!hours) return { g: 'unknown' };
+    var now = new Date(), d = now.getDay(), m = now.getHours() * 60 + now.getMinutes();
+    var y = ranges(hours, DAYS[(d + 6) % 7]).filter(function (r) { return m + 1440 >= r[0] && m + 1440 < r[1]; })[0];
+    if (y) return { g: 'open', label: 'Open now until ' + nice(y[1]) };
+    var t = ranges(hours, DAYS[d]);
+    var cur = t.filter(function (r) { return m >= r[0] && m < r[1]; })[0];
+    if (cur) return { g: 'open', label: 'Open now until ' + nice(cur[1]) };
+    var later = t.filter(function (r) { return r[0] > m; }).sort(function (a, b) { return a[0] - b[0]; })[0];
+    if (later) return { g: 'open', label: 'Opens ' + nice(later[0]) + ' today', soon: true };
+    for (var i = 1; i <= 7; i++) {
+      var n = ranges(hours, DAYS[(d + i) % 7]).sort(function (a, b) { return a[0] - b[0]; })[0];
+      if (n) return { g: 'closed', label: 'Closed today · opens ' + (i === 1 ? 'tomorrow' : NAMES[(d + i) % 7]) + ' ' + nice(n[0]) };
+    }
+    return { g: 'closed', label: 'Closed today' };
+  }
+  WB.places().then(function (all) {
+    var by = {}; all.forEach(function (p) { by[p.s] = p; });
+    grids.forEach(function (grid) {
+      var mode = grid.dataset.split, limit = +grid.dataset.limit || 0;
+      var cards = [].slice.call(grid.querySelectorAll('.card[data-slug]'));
+      var groups = { open: [], closed: [], unknown: [] };
+      cards.forEach(function (c) {
+        var p = by[c.dataset.slug], st = status(p && p.o);
+        groups[st.g].push(c);
+        if (st.label && !c.querySelector('.oc')) {
+          var pill = document.createElement('span');
+          pill.className = 'oc oc-' + st.g + (st.soon ? ' oc-soon' : '');
+          pill.textContent = st.label;
+          var meta = c.querySelector('.meta'); (meta || c.querySelector('.body')).insertAdjacentElement(meta ? 'afterend' : 'beforeend', pill);
+        }
+      });
+      var title = { open: mode === 'tonight' ? 'Open tonight' : 'Open today', closed: 'Closed today', unknown: 'Hours not known yet' };
+      grid.classList.remove('grid'); grid.classList.add('split');
+      grid.innerHTML = '';
+      ['open', 'closed', 'unknown'].forEach(function (k) {
+        var list = groups[k]; if (!list.length) return;
+        var box = document.createElement('div'); box.className = 'split-g split-' + k;
+        box.innerHTML = '<h3 class="split-h"><span class="dot"></span>' + title[k] + ' <span class="split-n">' + list.length + '</span></h3>';
+        var g = document.createElement('div'); g.className = 'grid';
+        list.forEach(function (c, i) { c.hidden = !!limit && i >= (k === 'open' ? limit : 4); g.appendChild(c); });
+        box.appendChild(g); grid.appendChild(box);
+      });
+      // keep the area filter on category pages tidy
+      var tidy = function () { grid.querySelectorAll('.split-g').forEach(function (b) { b.hidden = !b.querySelector('.card:not([hidden])'); }); };
+      document.querySelectorAll('.chip-l[data-area]').forEach(function (ch) { ch.addEventListener('click', function () { setTimeout(tidy, 0); }); });
+    });
+  }).catch(function () {});
+})();

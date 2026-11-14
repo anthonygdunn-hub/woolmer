@@ -205,7 +205,7 @@ ${scripts}
 function card(p, stat) {
   const c = catBySlug[p.category];
   const sub = [c ? c.name : p.category, p.area].filter(Boolean).join(' · ');
-  return `<a class="card" href="/p/${p.slug}/" data-area="${esc(p.area || '')}" data-name="${esc(p.name.toLowerCase())}">
+  return `<a class="card" href="/p/${p.slug}/" data-slug="${p.slug}" data-area="${esc(p.area || '')}" data-name="${esc(p.name.toLowerCase())}">
   <div class="art"><span class="initial" aria-hidden="true">${esc(p.name.replace(/^the\s+/i, '')[0] || '')}</span>${isFeatured(p) ? '<span class="badge badge-f">Featured</span>' : p.claimed ? '<span class="badge badge-v">Owner-verified</span>' : ''}</div>
   <div class="body">
     <h3>${esc(p.name)}</h3>
@@ -253,7 +253,7 @@ function build(data) {
   // home
   const counts = Object.fromEntries(CATS.map(c => [c.name, places.filter(p => p.category === c.name).length]));
   const featured = places.filter(isFeatured);
-  const showcase = (featured.length ? featured : places.filter(p => p.category === 'Takeaways')).sort(sortPlaces).slice(0, 8);
+  const showcase = (featured.length ? featured : places.filter(p => p.category === 'Takeaways')).sort(sortPlaces);
   files['index.html'] = page({
     title: 'woolmer — the Whitehill & Bordon guide',
     desc: `Every takeaway, pub, café and shop in Whitehill & Bordon in one place: ${places.length} local businesses with food hygiene ratings, opening hours${REV ? ', menus and local reviews' : ' and menus'}.`,
@@ -276,7 +276,7 @@ function build(data) {
 </div></section>
 <section class="sec"><div class="wrap">
   <div class="sec-head"><div><p class="eyebrow" style="color:var(--teal-d)">${featured.length ? 'Featured' : '<span data-night>Tonight, sorted</span>'}</p><h2>${featured.length ? 'Featured local businesses' : 'Takeaways'}</h2></div><a href="/takeaways/">All takeaways</a></div>
-  <div class="grid">${showcase.map(p => card(p, stats[p.id])).join('')}</div>
+  <div class="grid" data-split="${featured.length ? 'today' : 'tonight'}" data-limit="8">${showcase.map((p, i) => card(p, stats[p.id]).replace('<a class="card"', i >= 8 ? '<a hidden class="card"' : '<a class="card"')).join('')}</div>
 </div></section>
 <section class="sec" style="padding-top:0"><div class="wrap"><div class="panel panel-dk dk" style="display:flex;flex-wrap:wrap;gap:24px;align-items:center;justify-content:space-between">
   <div style="flex:1 1 420px"><h2>Run a local business?</h2><p style="margin:8px 0 0">Your business is probably already here. Claim it free to add your menu, opening hours, photos and contact details${REV ? ', and reply to reviews' : ''}.</p></div>
@@ -303,7 +303,7 @@ ${signupBlock}`,
 <section class="sec" style="padding-top:28px"><div class="wrap">
   <div class="chips" role="group" aria-label="Filter by area" style="margin:0 0 20px"><button class="chip chip-l" type="button" data-area="" aria-pressed="true">Everywhere</button>${areas.map(a => `<button class="chip chip-l" type="button" data-area="${esc(a)}" aria-pressed="false">${esc(a)}</button>`).join('')}</div>
   ${pins.length ? `<div class="map map-lg" id="map" data-pins="${esc(JSON.stringify(pins))}" role="region" aria-label="Map of ${esc(c.name.toLowerCase())}" style="margin-bottom:24px"></div>` : ''}
-  <div class="grid" id="list">${list.map(p => card(p, stats[p.id])).join('')}</div>
+  <div class="grid" id="list" data-split="${c.name === 'Takeaways' ? 'tonight' : 'today'}">${list.map(p => card(p, stats[p.id])).join('')}</div>
   <p class="muted" style="font-size:14px;margin-top:24px">Missing somewhere? <a href="mailto:info@woolmer.info?subject=Missing%20from%20woolmer">Tell us</a> and we'll add it.</p>
 </div></section>`,
     });
