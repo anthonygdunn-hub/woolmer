@@ -408,6 +408,9 @@ ${groups.map(([c, l]) => `<section class="sec" style="padding-bottom:0"><div cla
     files[`${from}/index.html`] = `<!doctype html><meta charset="utf-8"><title>Moved</title><link rel="canonical" href="https://woolmer.info/${to}/"><meta name="robots" content="noindex"><meta http-equiv="refresh" content="0;url=/${to}/"><a href="/${to}/">This page has moved</a>`;
   }
 
+  // Google Search Console verification (keep)
+  files['googlea4112adde4b70e99.html'] = 'google-site-verification: googlea4112adde4b70e99.html';
+
   // local info
   {
     const byName = n => places.find(p => p.name === n);
