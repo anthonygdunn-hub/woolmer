@@ -9,6 +9,10 @@ try {
     rows.push(...d.establishments.map(e => ({ id: e.FHRSID, n: e.BusinessName, t: e.BusinessType, a: [e.AddressLine1, e.AddressLine2, e.AddressLine3].filter(Boolean).join(', '), pc: e.PostCode, r: e.RatingValue, la: e.geocode && e.geocode.latitude, lo: e.geocode && e.geocode.longitude })));
     if (d.establishments.length < 500) break;
   }
+  for (const addr of ['Passfield', 'Conford']) {
+    const d = await j(`https://api.ratings.food.gov.uk/Establishments?address=${addr}&pageSize=500`, { headers: { 'x-api-version': '2', accept: 'application/json' } });
+    rows.push(...d.establishments.map(e => ({ id: e.FHRSID, n: e.BusinessName, t: e.BusinessType, a: [e.AddressLine1, e.AddressLine2, e.AddressLine3].filter(Boolean).join(', '), pc: e.PostCode, r: e.RatingValue, rd: e.RatingDate, la: e.geocode && e.geocode.latitude, lo: e.geocode && e.geocode.longitude })));
+  }
   out.fsa = rows;
 } catch (e) { out.fsa_error = String(e); }
 try {
