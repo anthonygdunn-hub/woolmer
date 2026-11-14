@@ -265,7 +265,8 @@ function build(data) {
   <p class="eyebrow">Whitehill · Bordon · Lindford · Headley Down</p>
   <h1>Everything local, finally in <span>one place.</span></h1>
   <p class="lead">${places.length} local takeaways, pubs, cafés and shops, with maps, food hygiene ratings, opening hours and menus${REV ? ', and answers from people who live here' : ''}.</p>
-  <form class="search" action="/search/" role="search"><label class="sr" for="q">Search woolmer</label><input id="q" name="q" type="search" placeholder="Try &quot;chippy&quot;, &quot;pub Headley&quot; or &quot;Lidl&quot;"><button class="btn btn-fountain" type="submit">Search</button></form>
+  <div class="live" id="live" aria-live="polite" hidden></div>
+  <form class="search" action="/search/" role="search" autocomplete="off"><label class="sr" for="q">Search woolmer</label><input id="q" name="q" type="search" placeholder="Try &quot;chippy&quot;, &quot;pub Headley&quot; or &quot;Lidl&quot;" aria-autocomplete="list" aria-controls="suggest" aria-expanded="false"><button class="btn btn-fountain" type="submit">Search</button><div class="suggest" id="suggest" role="listbox" hidden></div></form>
   <div class="chips"><a class="chip" href="/near/">📍 Near me</a>${CATS.slice(0, 5).map(c => `<a class="chip" href="/${c.slug}/">${esc(c.name)}</a>`).join('')}</div>
 </div><p class="hero-credit">Photo: <a href="https://commons.wikimedia.org/wiki/File:Pond_on_Broxhead_Common,_Hampshire_-_geograph.org.uk_-_5927349.jpg" rel="nofollow">Pond on Broxhead Common</a> by John P Reeves, <a href="https://creativecommons.org/licenses/by-sa/2.0/" rel="nofollow">CC BY-SA 2.0</a></p></section>
 <section class="sec sec-band"><div class="wrap">

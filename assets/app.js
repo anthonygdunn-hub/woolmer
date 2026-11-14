@@ -278,3 +278,62 @@
     });
   }).catch(function () {});
 })();
+
+/* ---------- Home hero: live "right now" line and instant search suggestions ---------- */
+(function () {
+  var live = document.getElementById('live'), q = document.getElementById('q'), box = document.getElementById('suggest');
+  if (!live && !box) return;
+  var esc = WB.esc || function (s) { return String(s); };
+  var norm = function (s) { return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9 ]+/g, ' '); };
+  var syn = { chippy: 'fish chips', chinese: 'chinese wok china', indian: 'indian curry spice', pub: 'pub bar inn', coffee: 'coffee cafe', kebab: 'kebab bbq', barber: 'hair barber', doctor: 'surgery', gp: 'surgery', petrol: 'fuel shell esso jet', tip: 'recycling', park: 'park inclosure play' };
+  WB.places().then(function (all) {
+    // live line
+    if (live) {
+      var open = all.filter(function (p) { return WB.openNow(p.o) === true; });
+      var food = open.filter(function (p) { return /Takeaways|Pubs|Caf/.test(p.c); }).length;
+      var h = new Date().getHours(), when = h < 12 ? 'this morning' : h < 17 ? 'this afternoon' : 'tonight';
+      var render = function (evN) {
+        var bits = [];
+        if (open.length) bits.push('<a href="/near/?open=1"><b>' + open.length + '</b> ' + (open.length === 1 ? 'place' : 'places') + ' open now' + (food ? ', ' + food + ' for food and drink' : '') + '</a>');
+        if (evN) bits.push('<a href="/whats-on/"><b>' + evN + '</b> thing' + (evN > 1 ? 's' : '') + ' on ' + when + '</a>');
+        if (!bits.length) return;
+        live.innerHTML = '<span class="live-dot" aria-hidden="true"></span>' + bits.join('<span class="live-sep" aria-hidden="true">·</span>');
+        live.hidden = false;
+      };
+      (WB.eventsP || Promise.resolve([])).then(function (evs) {
+        var now = new Date(), endOfDay = new Date(now); endOfDay.setHours(23, 59, 59);
+        var n = (evs || []).filter(function (e) { var s = new Date(e.starts_at), en = e.ends_at ? new Date(e.ends_at) : new Date(s.getTime() + 3 * 36e5); return en > now && s < endOfDay; }).length;
+        render(n);
+      }, function () { render(0); });
+    }
+    // suggestions
+    if (!q || !box) return;
+    var idx = -1, items = [];
+    var close = function () { box.hidden = true; q.setAttribute('aria-expanded', 'false'); idx = -1; };
+    var run = function () {
+      var term = norm(q.value).trim();
+      if (term.length < 2) return close();
+      var words = term.split(/\s+/).map(function (w) { return syn[w] ? syn[w].split(' ').concat(w) : [w]; });
+      items = all.map(function (p) {
+        var name = norm(p.n), hay = norm([p.n, p.c, p.a, p.t].join(' ')), sc = 0;
+        var ok = words.every(function (alts) { return alts.some(function (w) { if (name.indexOf(w) === 0) { sc += 5; return true; } if (name.indexOf(w) > -1) { sc += 3; return true; } if (hay.indexOf(w) > -1) { sc += 1; return true; } return false; }); });
+        return ok ? { p: p, s: sc + (WB.openNow(p.o) ? 1 : 0) + p.f } : null;
+      }).filter(Boolean).sort(function (a, b) { return b.s - a.s || a.p.n.localeCompare(b.p.n); }).slice(0, 6);
+      box.innerHTML = items.map(function (r, i) {
+        var p = r.p, o = WB.openNow(p.o);
+        return '<a role="option" id="sg' + i + '" href="/p/' + p.s + '/"><span class="sg-n">' + esc(p.n) + '</span><span class="sg-m">' + esc([p.c, p.a].filter(Boolean).join(' · ')) + (o === true ? ' · <i class="sg-open">Open now</i>' : '') + '</span></a>';
+      }).join('') + '<a class="sg-all" href="/search/?q=' + encodeURIComponent(q.value.trim()) + '">' + (items.length ? 'See all results' : 'No direct match. Search everything') + ' →</a>';
+      box.hidden = false; q.setAttribute('aria-expanded', 'true'); idx = -1;
+    };
+    q.addEventListener('input', run);
+    q.addEventListener('keydown', function (e) {
+      var links = box.querySelectorAll('a'); if (box.hidden || !links.length) return;
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault(); idx = (idx + (e.key === 'ArrowDown' ? 1 : -1) + links.length) % links.length;
+        links.forEach(function (a, i) { a.classList.toggle('on', i === idx); }); q.setAttribute('aria-activedescendant', links[idx].id || '');
+      } else if (e.key === 'Enter' && idx > -1) { e.preventDefault(); location.href = links[idx].href; }
+      else if (e.key === 'Escape') close();
+    });
+    document.addEventListener('click', function (e) { if (!box.contains(e.target) && e.target !== q) close(); });
+  }).catch(function () {});
+})();

@@ -102,6 +102,6 @@
     apply('all');
   }
 
-  function go() { load().then(function (evs) { renderStrip(evs); renderHome(evs); renderAll(evs); }); }
+  function go() { var P = load(); window.WB = window.WB || {}; WB.eventsP = P; P.then(function (evs) { renderStrip(evs); renderHome(evs); renderAll(evs); }); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go); else go();
 })();
