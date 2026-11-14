@@ -75,12 +75,14 @@ const CATS = [
   { name: 'Motoring', blurb: 'Garages, MOTs, petrol stations and bikes', icon: 'car' },
   { name: 'Sport & fitness', blurb: 'Gyms, the leisure centre and golf', icon: 'run' },
   { name: 'Services', blurb: 'Solicitors, estate agents, trades and advice', icon: 'tool' },
-  { name: 'Community', blurb: 'Village halls, the library and post offices', icon: 'home' },
+  { name: 'Community', blurb: 'Village halls, churches, the library, post offices and the tip', icon: 'home' },
+  { name: 'Parks & outdoors', blurb: 'Parks, play areas, woods and nature reserves', icon: 'tree' },
 ].map(c => ({ ...c, slug: slugify(c.name) }));
 const catBySlug = Object.fromEntries(CATS.map(c => [c.name, c]));
 const AREAS = ['Bordon', 'Whitehill', 'Lindford', 'Headley', 'Headley Down', 'Kingsley', 'Oakhanger', 'Standford', 'Frith End', 'Blackmoor'];
 
 const ICONS = {
+  tree: '<path d="M10 2l5 7h-3l4 5H4l4-5H5zM10 14v4"/>',
   bag: '<path d="M5 8h10l-1 9H6zM7.5 8V6a2.5 2.5 0 0 1 5 0v2"/>',
   glass: '<path d="M6 3h8l-1 7a3 3 0 0 1-6 0zM10 13v4M7 17h6"/>',
   cup: '<path d="M4 7h10v5a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4zM14 8h1.5a2 2 0 0 1 0 4H14"/>',
