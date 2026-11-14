@@ -1,7 +1,7 @@
 /* woolmer admin — only works for info@dunnworks.io (database rules enforce it, this is just the screen) */
 (function () {
   var root = document.getElementById('adm'), WB = window.WB, esc = WB.esc, sb, tab = location.hash.slice(1) || 'claims';
-  var TABS = [['claims', 'Claims'], ['subs', 'New listings'], ['mod', 'Moderation'], ['reports', 'Reports'], ['events', "What's on"], ['walk', 'Street walk'], ['places', 'Listings'], ['signups', 'Sign-ups'], ['stats', 'Visitors'], ['alerts', 'Alerts'], ['settings', 'Settings']];
+  var TABS = [['claims', 'Claims'], ['subs', 'New listings'], ['sugg', 'Found online'], ['mod', 'Moderation'], ['reports', 'Reports'], ['events', "What's on"], ['walk', 'Street walk'], ['places', 'Listings'], ['signups', 'Sign-ups'], ['stats', 'Visitors'], ['alerts', 'Alerts'], ['settings', 'Settings']];
   function when(d) { return d ? new Date(d).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''; }
   function err(e) { alert(String(e && e.message || e)); }
   function chk(r) { if (r.error) throw r.error; return r.data; }
@@ -39,17 +39,48 @@
       sb.from('wb_reports').select('id', { count: 'exact', head: true }).eq('handled', false),
       sb.from('wb_signups').select('id', { count: 'exact', head: true }).eq('handled', false),
       sb.from('wb_submissions').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
+      sb.from('wb_suggestions').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
     ]).then(function (c) {
-      var n = { subs: c[6].count, claims: c[0].count, mod: (c[1].count || 0) + (c[2].count || 0) + (c[3].count || 0), reports: c[4].count, signups: c[5].count };
+      var n = { sugg: c[7].count, subs: c[6].count, claims: c[0].count, mod: (c[1].count || 0) + (c[2].count || 0) + (c[3].count || 0), reports: c[4].count, signups: c[5].count };
       root.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px"><h1 style="font-size:36px;margin:0 0 14px">Admin</h1><button class="btn btn-ghost btn-sm" id="so">Sign out</button></div>' +
         '<div class="tabs">' + TABS.map(function (t) { return '<button data-t="' + t[0] + '"' + (t[0] === tab ? ' class="on"' : '') + '>' + t[1] + (n[t[0]] ? '<span class="cnt">' + n[t[0]] + '</span>' : '') + '</button>'; }).join('') + '</div><div id="pane"></div>';
       document.getElementById('so').onclick = function () { sb.auth.signOut().then(function () { location.reload(); }); };
       root.querySelectorAll('[data-t]').forEach(function (b) { b.onclick = function () { tab = b.dataset.t; location.hash = tab; shell(); }; });
-      ({ subs: subs, claims: claims, mod: mod, reports: reports, featured: featured, events: events, walk: walk, places: places, signups: signups, stats: stats, alerts: alerts, settings: settings })[tab]();
+      ({ sugg: sugg, subs: subs, claims: claims, mod: mod, reports: reports, featured: featured, events: events, walk: walk, places: places, signups: signups, stats: stats, alerts: alerts, settings: settings })[tab]();
     });
   }
   function pane(h) { document.getElementById('pane').innerHTML = h; }
   function act(sel, fn) { document.querySelectorAll(sel).forEach(function (b) { b.onclick = function () { b.disabled = true; Promise.resolve(fn(b)).then(shell).catch(function (e) { b.disabled = false; err(e); }); }; }); }
+
+  // ------------------------------------------------ details the nightly sweep found online (nothing goes live until approved)
+  function sugg() {
+    sb.from('wb_suggestions').select('*,wb_places(name,slug,claimed)').eq('status', 'pending').order('created_at', { ascending: true }).limit(200).then(function (r) {
+      var rows = r.data || [];
+      var lab = { phone: 'Phone', website: 'Website', email: 'Email', menu_url: 'Menu link', description: 'Description', hours: 'Opening hours', address: 'Address', postcode: 'Postcode' };
+      function val(s) {
+        if (s.field === 'hours') { try { var h = JSON.parse(s.value); return esc(Object.keys(h).map(function (k) { return k + ' ' + h[k]; }).join(' · ')); } catch (e) { return esc(s.value); } }
+        if (/^https?:/.test(s.value)) return '<a href="' + esc(s.value) + '" target="_blank" rel="noopener">' + esc(s.value) + '</a>';
+        return esc(s.value);
+      }
+      var head = rows.length ? '<div class="acts" style="margin-bottom:12px"><span class="meta">' + rows.length + ' waiting. Check the source link before approving.</span><button class="btn btn-navy btn-sm" id="sgall">Approve all ' + rows.length + '</button></div>' : '';
+      pane(head + (rows.length ? rows.map(function (s) {
+        var p = s.wb_places || {}, np = s.new_place || {};
+        var title = s.kind === 'new' ? '<strong>New place: ' + esc(np.name) + '</strong> <span class="meta">' + esc(np.category || '') + '</span>'
+          : '<strong>' + esc(p.name) + '</strong> <span class="meta">' + esc(lab[s.field] || s.field) + (p.claimed ? ' · claimed by owner, will be refused' : '') + ' · <a href="/p/' + esc(p.slug) + '/" target="_blank">listing</a></span>';
+        var body = s.kind === 'new' ? '<p>' + esc([np.address, np.postcode].filter(Boolean).join(', ')) + (np.phone ? ' · ' + esc(np.phone) : '') + (np.website ? ' · ' + esc(np.website) : '') + '</p>' + (np.description ? '<p class="meta">' + esc(np.description) + '</p>' : '')
+          : '<p>' + val(s) + '</p>';
+        return '<div class="item">' + title + body + '<p class="meta">Source: <a href="' + esc(s.source_url) + '" target="_blank" rel="noopener">' + esc(s.source_url) + '</a>' + (s.note ? ' · ' + esc(s.note) : '') + ' · ' + when(s.created_at) + '</p>' +
+          '<div class="acts"><button class="btn btn-navy btn-sm" data-gok="' + s.id + '">Approve</button><button class="btn btn-ghost btn-sm" data-gno="' + s.id + '">Reject</button></div></div>';
+      }).join('') : '<p class="muted">Nothing waiting. The nightly sweep adds what it finds here.</p>'));
+      act('[data-gok]', function (b) { return sb.rpc('wb_apply_suggestion', { p_id: +b.dataset.gok }).then(chk); });
+      act('[data-gno]', function (b) { return sb.from('wb_suggestions').update({ status: 'rejected', decided_at: new Date().toISOString() }).eq('id', +b.dataset.gno).then(chk); });
+      var all = document.getElementById('sgall');
+      if (all) all.onclick = function () {
+        all.disabled = true;
+        rows.filter(function (s) { return !(s.wb_places || {}).claimed; }).reduce(function (pr, s) { return pr.then(function () { return sb.rpc('wb_apply_suggestion', { p_id: s.id }); }); }, Promise.resolve()).then(shell).catch(function (e) { all.disabled = false; err(e); });
+      };
+    });
+  }
 
   // ------------------------------------------------ new listings sent in by businesses
   function subs() {
