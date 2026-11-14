@@ -29,7 +29,7 @@ async function sb(pathq) {
 }
 async function load() {
   if (FIXTURE) return JSON.parse(fs.readFileSync(path.join(ROOT, 'data/fixture.json'), 'utf8'));
-  const cols = 'id,slug,name,category,address,postcode,area,hygiene_rating,rated_on,lat,lng,fhrs_id,claimed,featured_until,phone,website,email,description,hours,menu,photos,tags';
+  const cols = 'id,slug,name,category,address,postcode,area,hygiene_rating,rated_on,lat,lng,fhrs_id,claimed,featured_until,phone,website,email,description,hours,menu,menu_url,photos,tags';
   const since = new Date(Date.now() - 36e5 * 24).toISOString();
   const [places, stats, settings, events] = await Promise.all([
     sb(`wb_places?select=${cols}&listable=eq.true&order=name`),
@@ -355,7 +355,7 @@ ${groups.map(([c, l]) => `<section class="sec" style="padding-bottom:0"><div cla
   <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">${isFeatured(p) ? '<span class="badge badge-f">Featured</span>' : ''}${p.claimed ? '<span class="badge badge-v">Owner-verified listing</span>' : ''}<span id="open-now"></span></div>
   <h1>${esc(p.name)}</h1>
   <p>${esc([c ? c.name : p.category, addr].filter(Boolean).join(' · '))}</p>
-  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:20px">${p.phone ? `<a class="btn btn-fountain" href="tel:${esc(p.phone.replace(/\s+/g, ''))}">Call ${esc(p.phone)}</a>` : ''}<a class="btn btn-line" href="${esc(dirUrl)}" rel="noopener">Directions</a><button class="btn btn-line" type="button" data-save="${esc(p.slug)}" aria-pressed="false">♡ Save</button>${p.website ? `<a class="btn btn-line" href="${esc(p.website)}" rel="noopener nofollow">Website</a>` : ''}</div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:20px">${p.phone ? `<a class="btn btn-fountain" href="tel:${esc(p.phone.replace(/\s+/g, ''))}">Call ${esc(p.phone)}</a>` : ''}<a class="btn btn-line" href="${esc(dirUrl)}" rel="noopener">Directions</a><button class="btn btn-line" type="button" data-save="${esc(p.slug)}" aria-pressed="false">♡ Save</button>${(p.menu_url ? `<a class="btn btn-line" href="${esc(p.menu_url)}" rel="noopener nofollow" target="_blank">Menu &amp; order</a>` : '') + (p.website && p.website !== p.menu_url ? `<a class="btn btn-line" href="${esc(p.website)}" rel="noopener nofollow">Website</a>` : '') }</div>
 </div></section>
 <section class="sec" style="padding-top:28px"><div class="wrap"><div class="place-grid" id="place" data-id="${p.id}" data-slug="${esc(p.slug)}" data-name="${esc(p.name)}" ${hours ? `data-hours='${esc(JSON.stringify(hours))}'` : ''}>
   <div class="place-main">
