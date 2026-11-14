@@ -415,3 +415,16 @@ a.deal:hover{transform:translateY(-4px) rotate(-.4deg);box-shadow:0 18px 32px -2
 .dw-nudge{margin-top:16px;border:1px dashed var(--ln2);background:var(--card)}
 .dw-nudge p{font-size:15px}
 .dw-panel{border-left:4px solid var(--fountain)}
+
+/* ---------- add business / open categories ---------- */
+.hp{position:absolute!important;left:-9999px;width:1px;height:1px;overflow:hidden}
+.form .chk{flex-direction:row;align-items:center;gap:8px}
+.empty-cat h2{font-size:24px;margin:0 0 6px}
+.cat-ctas{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-top:22px}
+.cat-ctas .panel{display:flex;flex-direction:column;gap:4px;text-decoration:none;color:inherit;transition:transform .15s}
+.cat-ctas .panel:hover{transform:translateY(-2px)}
+.cat-ctas span{color:var(--teal-d);font-weight:600}
+.cta-add{border-left:4px solid var(--orange)}
+.cta-ask{border-left:4px solid var(--fountain)}
+.art-c[data-cat=trades-and-home-services]{--a:#E8EEF4;--b:#CFDCE8;--i:#2F5578}
+.art-c[data-cat=kids-and-family]{--a:#FFF1D6;--b:#FFE0A3;--i:#A0620A}

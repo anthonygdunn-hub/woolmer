@@ -75,7 +75,9 @@ const CATS = [
   { name: 'Hair & barbers', blurb: 'Hairdressers, barbers and tattoos', icon: 'scissors' },
   { name: 'Motoring', blurb: 'Garages, MOTs, petrol stations and bikes', icon: 'car' },
   { name: 'Sport & fitness', blurb: 'Gyms, the leisure centre and golf', icon: 'run' },
-  { name: 'Services', blurb: 'Solicitors, estate agents, trades and advice', icon: 'tool' },
+  { name: 'Trades & home services', blurb: 'Plumbers, electricians, builders, cleaners, removals, gardeners and handymen', icon: 'hammer', open: true },
+  { name: 'Kids & family', blurb: 'Parties and entertainers, cakes, tutors, classes, clubs and nurseries', icon: 'balloon', open: true },
+  { name: 'Services', blurb: 'Solicitors, estate agents, accountants and advice', icon: 'tool' },
   { name: 'Community', blurb: 'Village halls, churches, the library, post offices and the tip', icon: 'home' },
   { name: 'Parks & outdoors', blurb: 'Parks, play areas, woods and nature reserves', icon: 'tree' },
 ].map(c => ({ ...c, slug: slugify(c.name) }));
@@ -93,6 +95,8 @@ const ICONS = {
   leaf: '<path d="M4 16C4 8 9 4 16 4c0 7-4 12-12 12zM4 16l7-7"/>',
   bed: '<path d="M3 15V6M3 11h14v4M17 15v-3a2 2 0 0 0-2-2H9v1"/>',
   spa: '<path d="M10 16c-3.5 0-6-2.2-6-5 2.5 0 4.5 1 6 3 1.5-2 3.5-3 6-3 0 2.8-2.5 5-6 5zM10 14c-1.6-1.8-1.6-5.2 0-8 1.6 2.8 1.6 6.2 0 8z"/>',
+  hammer: '<path d="M11 4l5 5-2 2-5-5zM9.5 7.5L3 14l3 3 6.5-6.5"/>',
+  balloon: '<path d="M10 3a5 5 0 0 1 5 5c0 3.5-3 6-5 6s-5-2.5-5-6a5 5 0 0 1 5-5zM10 14l-1 2h2zM10 16c0 1.5-1 2-2 2.5"/>',
   scissors: '<circle cx="6" cy="6" r="2.5"/><circle cx="6" cy="14" r="2.5"/><path d="M8 7.5l9 7M8 12.5l9-7"/>',
   health: '<path d="M10 16.5s-6-3.6-6-8.2A3.3 3.3 0 0 1 10 6a3.3 3.3 0 0 1 6 2.3c0 4.6-6 8.2-6 8.2z"/>',
   car: '<path d="M3 13v-2l2-5h10l2 5v2zM3 13v2h2.5v-2M14.5 13v2H17v-2M6 10.5h.01M14 10.5h.01"/>',
@@ -280,7 +284,7 @@ function build(data) {
 </div><p class="hero-credit">Photo: <a href="https://commons.wikimedia.org/wiki/File:Pond_on_Broxhead_Common,_Hampshire_-_geograph.org.uk_-_5927349.jpg" rel="nofollow">Pond on Broxhead Common</a> by John P Reeves, <a href="https://creativecommons.org/licenses/by-sa/2.0/" rel="nofollow">CC BY-SA 2.0</a></p></section>
 <section class="sec sec-band"><div class="wrap">
   <div class="sec-head"><h2>What are you after?</h2><a href="/search/">Search everything</a></div>
-  <div class="cats">${CATS.filter(c => counts[c.name]).map((c, i) => `<a class="cat" style="--i:${i}" href="/${c.slug}/"><span class="ico">${icon(c.icon)}</span><span><b>${esc(c.name)}</b><span>${counts[c.name]} place${counts[c.name] > 1 ? 's' : ''}</span></span></a>`).join('')}</div>
+  <div class="cats">${CATS.filter(c => counts[c.name] || c.open).map((c, i) => `<a class="cat" style="--i:${i}" href="/${c.slug}/"><span class="ico">${icon(c.icon)}</span><span><b>${esc(c.name)}</b><span>${counts[c.name] ? `${counts[c.name]} place${counts[c.name] > 1 ? 's' : ''}` : 'New: add yours free'}</span></span></a>`).join('')}</div>
 </div></section>
 <section class="sec" id="deals-home" hidden><div class="wrap">
   <div class="sec-head"><div><p class="eyebrow" style="color:var(--teal-d)">From our Featured businesses</p><h2>Local deals</h2></div><a href="/business/#featured">Post a deal</a></div>
@@ -305,7 +309,7 @@ ${signupBlock}`,
   // categories
   for (const c of CATS) {
     const list = places.filter(p => p.category === c.name).sort(sortPlaces);
-    if (!list.length) continue;
+    if (!list.length && !c.open) continue;
     const areas = [...new Set(list.map(p => p.area).filter(Boolean))].sort((a, b) => AREAS.indexOf(a) - AREAS.indexOf(b));
     const pins = list.filter(p => p.lat && p.lng).map(p => ({ n: p.name, s: p.slug, lat: p.lat, lng: p.lng }));
     sitemap.push(`/${c.slug}/`);
@@ -315,12 +319,12 @@ ${signupBlock}`,
       path: `/${c.slug}/`,
       head: pins.length ? '<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">' : '',
       scripts: pins.length ? '<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin="" defer></script>' : '',
-      body: `<section class="ph dk"><div class="wrap"><nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a> / ${esc(c.name)}</nav><h1>${esc(c.name)} in Whitehill &amp; Bordon</h1><p>${esc(c.blurb)}. ${list.length} place${list.length > 1 ? 's' : ''}.</p></div></section>
+      body: `<section class="ph dk"><div class="wrap"><nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a> / ${esc(c.name)}</nav><h1>${esc(c.name)} in Whitehill &amp; Bordon</h1><p>${esc(c.blurb)}.${list.length ? ` ${list.length} place${list.length > 1 ? 's' : ''}.` : ''}</p></div></section>
 <section class="sec" style="padding-top:28px"><div class="wrap">
   <div class="chips" role="group" aria-label="Filter by area" style="margin:0 0 20px"><button class="chip chip-l" type="button" data-area="" aria-pressed="true">Everywhere</button>${areas.map(a => `<button class="chip chip-l" type="button" data-area="${esc(a)}" aria-pressed="false">${esc(a)}</button>`).join('')}</div>
   ${pins.length ? `<div class="map map-lg" id="map" data-pins="${esc(JSON.stringify(pins))}" role="region" aria-label="Map of ${esc(c.name.toLowerCase())}" style="margin-bottom:24px"></div>` : ''}
-  <div class="grid" id="list" data-split="${c.name === 'Takeaways' ? 'tonight' : 'today'}">${list.map(p => card(p, stats[p.id])).join('')}</div>
-  <p class="muted" style="font-size:14px;margin-top:24px">Missing somewhere? <a href="mailto:info@woolmer.info?subject=Missing%20from%20woolmer">Tell us</a> and we'll add it.</p>
+  ${list.length ? `<div class="grid" id="list" data-split="${c.name === 'Takeaways' ? 'tonight' : 'today'}">${list.map(p => card(p, stats[p.id])).join('')}</div>` : `<div class="panel empty-cat"><h2>Just opened</h2><p>We only list businesses that add themselves or that we can check from official records, so this section starts empty. Local ${esc(c.name.toLowerCase())} businesses can add themselves free in two minutes.</p></div>`}
+  <div class="cat-ctas"><a class="panel cta-add" href="/add/?c=${encodeURIComponent(c.name)}"><b>Run a business like this?</b><span>Add it to woolmer free →</span></a><a class="panel cta-ask" href="/ask/"><b>Need a recommendation?</b><span>Ask the town and locals will answer →</span></a></div>
 </div></section>`,
     });
   }
@@ -459,11 +463,39 @@ ${groups.map(([c, l]) => `<section class="sec" style="padding-bottom:0"><div cla
   });
   files['places.json'] = JSON.stringify(places.map(p => ({ s: p.slug, n: p.name, c: p.category, a: p.area || '', t: (p.tags || []).join(' '), d: (p.description || '').slice(0, 160), h: p.hygiene_rating, f: isFeatured(p) ? 1 : 0, v: p.claimed ? 1 : 0, la: p.lat ? +(+p.lat).toFixed(5) : undefined, lo: p.lng ? +(+p.lng).toFixed(5) : undefined, o: p.hours && Object.values(p.hours).some(v => v && !/closed/i.test(v)) ? p.hours : undefined, ph: photo1(p) ? photo1(p).src : undefined, k: catBySlug[p.category] ? catBySlug[p.category].slug : undefined })));
 
+  // add your business
+  sitemap.push('/add/');
+  files['add/index.html'] = page({
+    title: 'Add your business to woolmer, free', desc: 'Add your Whitehill, Bordon, Lindford or Headley business to woolmer for free: trades, services, kids and family, shops and more.', path: '/add/',
+    scripts: '<script src="/assets/add.js" defer></script>',
+    body: `<section class="ph dk"><div class="wrap"><nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a> / <a href="/business/">For businesses</a> / Add your business</nav><h1>Add your business, free</h1><p>Plumber, cleaner, cake maker, tutor? If you work in or around Whitehill &amp; Bordon, put yourself in front of the town. We check every listing before it goes live.</p></div></section>
+<section class="sec" style="padding-top:28px"><div class="wrap narrow"><form class="form panel" id="addf" novalidate>
+  <label>Business name<input name="name" required maxlength="120"></label>
+  <label>What kind of business?<select name="category" required><option value="">Choose one</option>${CATS.map(c => `<option>${esc(c.name)}</option>`).join('')}</select></label>
+  <label>Area<select name="area"><option value="">Choose one</option>${AREAS.map(a => `<option>${esc(a)}</option>`).join('')}<option>Covers the whole area</option></select></label>
+  <label>Address <span class="muted">(leave blank if you work from home or go to customers)</span><input name="address" maxlength="200"></label>
+  <label>Postcode<input name="postcode" maxlength="10"></label>
+  <label>Public phone number<input name="phone" type="tel" maxlength="30"></label>
+  <label>Website <span class="muted">(starting https://)</span><input name="website" type="url" maxlength="300" placeholder="https://"></label>
+  <label>Public email<input name="email" type="email" maxlength="200"></label>
+  <label>What you do <span class="muted">(a couple of sentences)</span><textarea name="description" rows="4" maxlength="600"></textarea></label>
+  <hr style="border:0;border-top:1px solid var(--ln);margin:6px 0">
+  <p class="muted" style="margin:0;font-size:14px">Your details, so we can check the listing. These aren't shown on the site.</p>
+  <label>Your name<input name="contact_name" required maxlength="100"></label>
+  <label>Your email<input name="contact_email" type="email" required maxlength="200"></label>
+  <label class="chk"><input type="checkbox" name="is_owner" checked> I own or run this business</label>
+  <label class="hp" aria-hidden="true">Leave this empty<input name="company_fax" tabindex="-1" autocomplete="off"></label>
+  <button class="btn btn-navy" style="align-self:flex-start">Send for checking</button>
+  <p class="msg" role="status"></p>
+  <p class="muted" style="font-size:13px;margin:0">No website yet? <a href="https://dunnworks.io/?utm_source=woolmer&utm_medium=referral&utm_campaign=add">Dunnworks</a>, who built woolmer, makes fast websites for local businesses from £750.</p>
+</form></div></section>`,
+  });
+
   // ask the town
   files['ask/index.html'] = page({
     title: 'Ask the town — woolmer', desc: 'Ask a question and get answers from people who live in Whitehill & Bordon.', path: '/ask/',
     scripts: '<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js" defer></script><script src="/assets/ask.js" defer></script>',
-    body: `<section class="ph dk"><div class="wrap"><h1>Ask the town</h1><p>Best chippy for a Monday? Under-8s football on Saturdays? Ask, and people who live here will answer.</p></div></section>
+    body: `<section class="ph dk"><div class="wrap"><h1>Ask the town</h1><p>Need a plumber in Lindford? A cake for Saturday? Best chippy for a Monday? Ask, and people and businesses who are here will answer.</p></div></section>
 <section class="sec" style="padding-top:28px"><div class="wrap narrow"><div id="ask-cta"></div><div id="ask-list" class="panel" style="margin-top:20px"><p class="muted">Loading…</p></div></div></section>`,
   });
 
@@ -473,7 +505,7 @@ ${groups.map(([c, l]) => `<section class="sec" style="padding-bottom:0"><div cla
     title: 'For local businesses — woolmer', desc: `Claim your free woolmer listing: add your menu, opening hours and photos${REV ? ', reply to reviews' : ''}, and get featured in front of Whitehill & Bordon.`, path: '/business/',
     body: `<section class="ph dk"><div class="wrap"><h1>Your business, in front of the whole town</h1><p>woolmer lists local businesses across Whitehill &amp; Bordon from public records, including the Food Standards Agency and OpenStreetMap. Claim yours to make it yours.</p></div></section>
 <section class="sec"><div class="wrap"><div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(280px,1fr))">
-  <div class="panel"><p class="eyebrow" style="color:var(--teal-d)">Free, forever</p><h2>Claim your listing</h2><ul style="padding-left:18px;margin:12px 0 20px"><li>Add your opening hours, phone and website</li><li>Put your full menu online</li>${REV ? '<li>Reply to reviews and answer questions</li>' : ''}<li>Get the "Owner-verified" badge</li></ul><a class="btn btn-navy" href="/search/">Find your business</a><p class="muted" style="font-size:14px;margin:12px 0 0">Not listed? <a href="mailto:info@woolmer.info?subject=Add%20my%20business%20to%20woolmer">Email us</a> and we'll add you.</p></div>
+  <div class="panel"><p class="eyebrow" style="color:var(--teal-d)">Free, forever</p><h2>Claim your listing</h2><ul style="padding-left:18px;margin:12px 0 20px"><li>Add your opening hours, phone and website</li><li>Put your full menu online</li>${REV ? '<li>Reply to reviews and answer questions</li>' : ''}<li>Get the "Owner-verified" badge</li></ul><a class="btn btn-navy" href="/search/">Find your business</a><p class="muted" style="font-size:14px;margin:12px 0 0">Not listed? <a href="/add/">Add your business free</a>.</p></div>
   <div class="panel panel-dk dk" id="featured"><p class="eyebrow">£${esc(price)} a month</p><h2>Get featured</h2><ul style="padding-left:18px;margin:12px 0 20px;color:var(--od2)"><li>Top of your category, with a Featured badge</li><li>On the woolmer home page</li><li>Post your own deals and offers, shown on the home page and in the app</li><li>Shared on woolmer's Facebook and Instagram</li><li>No contract, cancel any month</li></ul><a class="btn btn-fountain" href="mailto:info@woolmer.info?subject=Featured%20listing%20on%20woolmer">Ask about featuring</a></div>
 </div>
 <div class="panel dw-panel" style="margin-top:20px" id="website"><div class="dw-grid"><div><p class="eyebrow" style="color:var(--teal-d)">From the people who built woolmer</p><h2>Need a proper website?</h2><p style="margin:8px 0 14px">woolmer was designed and built by <a href="https://dunnworks.io/?utm_source=woolmer&utm_medium=referral&utm_campaign=business">Dunnworks</a>, a web designer here in Bordon. If your business has no website, or one you're paying monthly for and don't love, Dunnworks can build you a fast one that you own.</p><ul style="padding-left:18px;margin:0 0 18px"><li>Hand-coded, quick on phones and good for Google</li><li>From £750, no monthly platform fees, and you own the files</li><li>Menus, online ordering, bookings and events if you need them</li><li>A free mock-up of your new site before you commit</li><li>Local: we can meet for a coffee in Bordon</li></ul><a class="btn btn-navy" href="https://dunnworks.io/?utm_source=woolmer&utm_medium=referral&utm_campaign=business">See Dunnworks</a> <a class="btn btn-ghost" href="mailto:info@woolmer.info?subject=Website%20for%20my%20business">Ask for a free mock-up</a></div></div></div>

@@ -1,7 +1,7 @@
 /* woolmer admin — only works for info@dunnworks.io (database rules enforce it, this is just the screen) */
 (function () {
   var root = document.getElementById('adm'), WB = window.WB, esc = WB.esc, sb, tab = location.hash.slice(1) || 'claims';
-  var TABS = [['claims', 'Claims'], ['mod', 'Moderation'], ['reports', 'Reports'], ['featured', 'Featured'], ['events', "What's on"], ['walk', 'Street walk'], ['places', 'Listings'], ['signups', 'Sign-ups'], ['stats', 'Visitors'], ['alerts', 'Alerts'], ['settings', 'Settings']];
+  var TABS = [['claims', 'Claims'], ['subs', 'New listings'], ['mod', 'Moderation'], ['reports', 'Reports'], ['featured', 'Featured'], ['events', "What's on"], ['walk', 'Street walk'], ['places', 'Listings'], ['signups', 'Sign-ups'], ['stats', 'Visitors'], ['alerts', 'Alerts'], ['settings', 'Settings']];
   function when(d) { return d ? new Date(d).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''; }
   function err(e) { alert(String(e && e.message || e)); }
   function chk(r) { if (r.error) throw r.error; return r.data; }
@@ -38,17 +38,35 @@
       sb.from('wb_answers').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
       sb.from('wb_reports').select('id', { count: 'exact', head: true }).eq('handled', false),
       sb.from('wb_signups').select('id', { count: 'exact', head: true }).eq('handled', false),
+      sb.from('wb_submissions').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
     ]).then(function (c) {
-      var n = { claims: c[0].count, mod: (c[1].count || 0) + (c[2].count || 0) + (c[3].count || 0), reports: c[4].count, signups: c[5].count };
+      var n = { subs: c[6].count, claims: c[0].count, mod: (c[1].count || 0) + (c[2].count || 0) + (c[3].count || 0), reports: c[4].count, signups: c[5].count };
       root.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px"><h1 style="font-size:36px;margin:0 0 14px">Admin</h1><button class="btn btn-ghost btn-sm" id="so">Sign out</button></div>' +
         '<div class="tabs">' + TABS.map(function (t) { return '<button data-t="' + t[0] + '"' + (t[0] === tab ? ' class="on"' : '') + '>' + t[1] + (n[t[0]] ? '<span class="cnt">' + n[t[0]] + '</span>' : '') + '</button>'; }).join('') + '</div><div id="pane"></div>';
       document.getElementById('so').onclick = function () { sb.auth.signOut().then(function () { location.reload(); }); };
       root.querySelectorAll('[data-t]').forEach(function (b) { b.onclick = function () { tab = b.dataset.t; location.hash = tab; shell(); }; });
-      ({ claims: claims, mod: mod, reports: reports, featured: featured, events: events, walk: walk, places: places, signups: signups, stats: stats, alerts: alerts, settings: settings })[tab]();
+      ({ subs: subs, claims: claims, mod: mod, reports: reports, featured: featured, events: events, walk: walk, places: places, signups: signups, stats: stats, alerts: alerts, settings: settings })[tab]();
     });
   }
   function pane(h) { document.getElementById('pane').innerHTML = h; }
   function act(sel, fn) { document.querySelectorAll(sel).forEach(function (b) { b.onclick = function () { b.disabled = true; Promise.resolve(fn(b)).then(shell).catch(function (e) { b.disabled = false; err(e); }); }; }); }
+
+  // ------------------------------------------------ new listings sent in by businesses
+  function subs() {
+    sb.from('wb_submissions').select('*').order('created_at', { ascending: false }).limit(100).then(function (r) {
+      var rows = r.data || [];
+      pane(rows.length ? rows.map(function (s) {
+        return '<div class="item"><strong>' + esc(s.name) + '</strong> <span class="meta">' + esc(s.category) + (s.area ? ' · ' + esc(s.area) : '') + ' · ' + esc(s.status) + ' · ' + when(s.created_at) + '</span>' +
+          '<p>' + esc([s.address, s.postcode].filter(Boolean).join(', ') || 'No address') + (s.phone ? ' · ' + esc(s.phone) : '') + (s.email ? ' · ' + esc(s.email) : '') + (s.website ? ' · <a href="' + esc(s.website) + '" target="_blank" rel="noopener">' + esc(s.website) + '</a>' : '') + '</p>' +
+          (s.description ? '<p class="meta">' + esc(s.description) + '</p>' : '') +
+          '<p class="meta">Sent by ' + esc(s.contact_name) + ' · ' + esc(s.contact_email) + (s.is_owner ? ' · says they run it' : ' · not the owner') + '</p>' +
+          (s.status === 'pending' ? '<div class="acts"><button class="btn btn-navy btn-sm" data-sok="' + s.id + '">Approve and publish</button><button class="btn btn-ghost btn-sm" data-sno="' + s.id + '">Reject</button></div>'
+            : s.place_id ? '<p class="meta">Listing created (goes live on the next hourly build)</p>' : '') + '</div>';
+      }).join('') : '<p class="muted">No new listings sent in yet.</p>');
+      act('[data-sok]', function (b) { return sb.rpc('wb_approve_submission', { p_id: +b.dataset.sok }).then(chk); });
+      act('[data-sno]', function (b) { return sb.from('wb_submissions').update({ status: 'rejected' }).eq('id', +b.dataset.sno).then(chk); });
+    });
+  }
 
   // ------------------------------------------------ claims
   function claims() {
