@@ -13,7 +13,11 @@ try {
 } catch (e) { out.fsa_error = String(e); }
 try {
   const q = `[out:json][timeout:60];(nwr["shop"](51.075,-0.92,51.145,-0.79);nwr["amenity"~"restaurant|cafe|fast_food|pub|bar|pharmacy|doctors|dentist|post_office|bank|library|community_centre|recycling|fuel|veterinary|childcare|place_of_worship"](51.075,-0.92,51.145,-0.79);nwr["leisure"~"sports_centre|fitness_centre|park|playground"](51.075,-0.92,51.145,-0.79);nwr["craft"](51.075,-0.92,51.145,-0.79);nwr["office"](51.075,-0.92,51.145,-0.79););out center tags;`;
-  const d = await j('https://overpass-api.de/api/interpreter', { method: 'POST', body: 'data=' + encodeURIComponent(q), headers: { 'content-type': 'application/x-www-form-urlencoded' } });
+  let d = null;
+  for (const ep of ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter', 'https://overpass.private.coffee/api/interpreter']) {
+    try { d = await j(ep, { method: 'POST', body: 'data=' + encodeURIComponent(q), headers: { 'content-type': 'application/x-www-form-urlencoded', accept: 'application/json', 'user-agent': 'woolmer.info data audit (hello@woolmer.info)' } }); break; } catch (e) { out.osm_tries = (out.osm_tries || []).concat(String(e)); }
+  }
+  if (!d) throw new Error('all overpass endpoints failed');
   out.osm = d.elements.filter(e => e.tags && e.tags.name).map(e => ({ id: e.type + '/' + e.id, n: e.tags.name, k: e.tags.shop ? 'shop=' + e.tags.shop : e.tags.amenity ? 'amenity=' + e.tags.amenity : e.tags.leisure ? 'leisure=' + e.tags.leisure : e.tags.craft ? 'craft=' + e.tags.craft : 'office=' + e.tags.office, la: e.lat || (e.center && e.center.lat), lo: e.lon || (e.center && e.center.lon), pc: e.tags['addr:postcode'], st: e.tags['addr:street'], hn: e.tags['addr:housenumber'], ph: e.tags.phone || e.tags['contact:phone'], web: e.tags.website || e.tags['contact:website'], oh: e.tags.opening_hours }));
 } catch (e) { out.osm_error = String(e); }
 try {
