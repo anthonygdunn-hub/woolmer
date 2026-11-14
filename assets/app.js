@@ -341,3 +341,28 @@
     document.addEventListener('click', function (e) { if (!box.contains(e.target) && e.target !== q) close(); });
   }).catch(function () {});
 })();
+
+/* ---------- Deals from Featured businesses ---------- */
+(function () {
+  var list = document.getElementById('deals-list'), slot = document.getElementById('deal-slot'), place = document.getElementById('place');
+  if ((!list && !slot) || !WB.url) return;
+  var esc = WB.esc;
+  var url = WB.url + '/rest/v1/wb_deals?select=id,title,details,ends_on,place_id,wb_places(slug,name,category)&published=eq.true&ends_on=gte.' + new Date().toISOString().slice(0, 10) + '&order=ends_on';
+  if (slot && place) url += '&place_id=eq.' + encodeURIComponent(place.dataset.id);
+  var ends = function (d) { var t = new Date(d + 'T23:59:59'), days = Math.round((t - new Date()) / 864e5); return days <= 0 ? 'Ends today' : days === 1 ? 'Ends tomorrow' : days < 8 ? 'Ends in ' + days + ' days' : 'Until ' + t.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }); };
+  fetch(url, { headers: { apikey: WB.key, Authorization: 'Bearer ' + WB.key } }).then(function (r) { return r.ok ? r.json() : []; }).then(function (rows) {
+    rows = (rows || []).filter(function (d) { return d.wb_places; });
+    if (!rows.length) return;
+    if (list) {
+      list.innerHTML = rows.slice(0, 6).map(function (d) {
+        return '<a class="deal" href="/p/' + esc(d.wb_places.slug) + '/"><span class="deal-tag">Deal</span><h3>' + esc(d.title) + '</h3><p class="deal-biz">' + esc(d.wb_places.name) + '</p>' + (d.details ? '<p class="deal-det">' + esc(d.details) + '</p>' : '') + '<p class="deal-end">' + ends(d.ends_on) + '</p></a>';
+      }).join('');
+      document.getElementById('deals-home').hidden = false;
+    }
+    if (slot) {
+      slot.innerHTML = rows.map(function (d) {
+        return '<div class="deal deal-wide"><span class="deal-tag">Deal</span><h3>' + esc(d.title) + '</h3>' + (d.details ? '<p class="deal-det">' + esc(d.details) + '</p>' : '') + '<p class="deal-end">' + ends(d.ends_on) + '. Mention woolmer when you order.</p></div>';
+      }).join('');
+    }
+  }).catch(function () {});
+})();

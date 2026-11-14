@@ -279,6 +279,10 @@ function build(data) {
   <div class="sec-head"><h2>What are you after?</h2><a href="/search/">Search everything</a></div>
   <div class="cats">${CATS.filter(c => counts[c.name]).map((c, i) => `<a class="cat" style="--i:${i}" href="/${c.slug}/"><span class="ico">${icon(c.icon)}</span><span><b>${esc(c.name)}</b><span>${counts[c.name]} place${counts[c.name] > 1 ? 's' : ''}</span></span></a>`).join('')}</div>
 </div></section>
+<section class="sec" id="deals-home" hidden><div class="wrap">
+  <div class="sec-head"><div><p class="eyebrow" style="color:var(--teal-d)">From our Featured businesses</p><h2>Local deals</h2></div><a href="/business/#featured">Post a deal</a></div>
+  <div class="deals" id="deals-list"></div>
+</div></section>
 <section class="sec" id="wo-home"${upcoming.length ? '' : ' hidden'}><div class="wrap">
   <div class="sec-head"><div><p class="eyebrow" style="color:var(--teal-d)">Coming up</p><h2>What's on</h2></div><a href="/whats-on/">All events</a></div>
   <div class="evs" id="wo-list" data-limit="6">${upcoming.slice(0, 6).map(e => evCard(e, byId)).join('')}</div>
@@ -368,6 +372,7 @@ ${groups.map(([c, l]) => `<section class="sec" style="padding-bottom:0"><div cla
 </div></section>
 <section class="sec" style="padding-top:28px"><div class="wrap"><div class="place-grid" id="place" data-id="${p.id}" data-slug="${esc(p.slug)}" data-name="${esc(p.name)}" ${hours ? `data-hours='${esc(JSON.stringify(hours))}'` : ''}>
   <div class="place-main">
+    <div id="deal-slot"></div>
     ${photo1(p) ? `<figure class="place-photo"><img src="${esc(photo1(p).src)}" alt="${esc(photo1(p).alt || p.name)}"><figcaption>${photo1(p).link ? `<a href="${esc(photo1(p).link)}" rel="nofollow noopener" target="_blank">Photo</a>` : 'Photo'}${photo1(p).credit ? ' by ' + esc(photo1(p).credit) : ''}${photo1(p).lic ? ', ' + esc(photo1(p).lic) : ''}</figcaption></figure>` : ''}
     ${p.description ? `<div class="panel"><h2>About</h2><p style="margin:0">${esc(p.description)}</p>${(p.tags || []).length ? `<div class="tags">${p.tags.map(t => `<span class="tag">${esc(t)}</span>`).join('')}</div>` : ''}</div>` : ''}
     ${menu && menu.length ? `<div class="panel" id="menu"><h2>Menu</h2>${menu.map(s => `<div class="menu-sec"><h3>${esc(s.section)}</h3>${(s.items || []).map(i => `<div class="menu-item"><span>${esc(i.name)}${i.desc ? `<small>${esc(i.desc)}</small>` : ''}</span>${i.price ? `<strong>£${esc(String(i.price).replace(/^£/, ''))}</strong>` : ''}</div>`).join('')}</div>`).join('')}<p class="muted" style="font-size:13px;margin:14px 0 0">Prices set by the business. Check allergens with them before you order.</p></div>` : ''}
@@ -428,7 +433,7 @@ ${groups.map(([c, l]) => `<section class="sec" style="padding-bottom:0"><div cla
     body: `<section class="ph dk"><div class="wrap"><h1>Your business, in front of the whole town</h1><p>woolmer lists local businesses across Whitehill &amp; Bordon from public records, including the Food Standards Agency and OpenStreetMap. Claim yours to make it yours.</p></div></section>
 <section class="sec"><div class="wrap"><div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(280px,1fr))">
   <div class="panel"><p class="eyebrow" style="color:var(--teal-d)">Free, forever</p><h2>Claim your listing</h2><ul style="padding-left:18px;margin:12px 0 20px"><li>Add your opening hours, phone and website</li><li>Put your full menu online</li>${REV ? '<li>Reply to reviews and answer questions</li>' : ''}<li>Get the "Owner-verified" badge</li></ul><a class="btn btn-navy" href="/search/">Find your business</a><p class="muted" style="font-size:14px;margin:12px 0 0">Not listed? <a href="mailto:info@woolmer.info?subject=Add%20my%20business%20to%20woolmer">Email us</a> and we'll add you.</p></div>
-  <div class="panel panel-dk dk" id="featured"><p class="eyebrow">£${esc(price)} a month</p><h2>Get featured</h2><ul style="padding-left:18px;margin:12px 0 20px;color:var(--od2)"><li>Top of your category, with a Featured badge</li><li>On the woolmer home page</li><li>Shared on woolmer's Facebook and Instagram</li><li>No contract, cancel any month</li></ul><a class="btn btn-fountain" href="mailto:info@woolmer.info?subject=Featured%20listing%20on%20woolmer">Ask about featuring</a></div>
+  <div class="panel panel-dk dk" id="featured"><p class="eyebrow">£${esc(price)} a month</p><h2>Get featured</h2><ul style="padding-left:18px;margin:12px 0 20px;color:var(--od2)"><li>Top of your category, with a Featured badge</li><li>On the woolmer home page</li><li>Post your own deals and offers, shown on the home page and in the app</li><li>Shared on woolmer's Facebook and Instagram</li><li>No contract, cancel any month</li></ul><a class="btn btn-fountain" href="mailto:info@woolmer.info?subject=Featured%20listing%20on%20woolmer">Ask about featuring</a></div>
 </div>
 <div class="panel" style="margin-top:20px"><h2>Need a proper website?</h2><p class="muted" style="margin:8px 0 16px">woolmer is built by <a href="https://dunnworks.io">Dunnworks</a>, a Bordon web designer. Hand-coded, fast websites for local businesses, from £750, with no monthly platform fee.</p><a class="btn btn-ghost" href="https://dunnworks.io">See Dunnworks</a></div>
 </div></section>`,

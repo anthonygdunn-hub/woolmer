@@ -236,9 +236,34 @@
         '<label>Menu<textarea name="menu" rows="10" style="font-family:ui-monospace,Menlo,monospace;font-size:13px" placeholder="## Starters\nSpring rolls | 3.50 | Vegetable\n## Mains\nChicken curry | 8.90">' + esc(menuToText(p.menu)) + '</textarea><span class="muted" style="font-size:13px;font-weight:400">A line starting ## is a section. Each item is: name | price | description.</span></label>' +
         '<button class="btn btn-navy" type="submit" style="align-self:flex-start">Save changes</button><p class="msg" role="status"></p><p class="muted" style="font-size:13px;margin:0">Changes show on your listing within the hour.</p></form>' +
         '<h3 style="margin-top:28px">Photos</h3><p class="muted" style="font-size:14px">Up to 6. The first one shows on your card and at the top of your listing. Only upload photos you took or have permission to use.</p><div class="ph-grid" data-ph></div><label class="btn btn-ghost btn-sm" style="align-self:flex-start;cursor:pointer;margin-top:10px">Add photos<input type="file" accept="image/*" multiple data-phin hidden></label><p class="msg" data-phmsg role="status"></p>' +
+        '<h3 style="margin-top:28px">Deals</h3>' + (featured
+          ? '<p class="muted" style="font-size:14px">Post up to 3 offers at a time. They show on your listing and in Local deals on the home page while you are Featured.</p><div data-deals><p class="muted">Loading…</p></div>' +
+            '<form class="form" data-dealf style="margin-top:10px"><label>Offer<input name="title" maxlength="80" required placeholder="2 large pizzas for £20 on Tuesdays"></label><label>Details (optional)<input name="details" maxlength="300" placeholder="Collection only. Mention woolmer."></label><label>Ends on<input name="ends" type="date" required></label><button class="btn btn-navy btn-sm" style="align-self:flex-start">Post deal</button><p class="msg" role="status"></p></form>'
+          : '<p class="notice">Featured businesses can post deals that appear on the woolmer home page. <a href="/business/#featured">Get featured</a>.</p>') +
         '<h3 style="margin-top:28px">Reviews</h3><div data-rv><p class="muted">Loading…</p></div>';
       document.getElementById('owned').appendChild(box);
       var f = box.querySelector('[data-f]');
+      // ---- deals
+      var dealf = box.querySelector('[data-dealf]');
+      if (dealf) {
+        var dBox = box.querySelector('[data-deals]'), today = new Date().toISOString().slice(0, 10), max = new Date(Date.now() + 90 * 864e5).toISOString().slice(0, 10);
+        dealf.ends.min = today; dealf.ends.max = max; dealf.ends.value = new Date(Date.now() + 14 * 864e5).toISOString().slice(0, 10);
+        var loadDeals = function () {
+          sb.from('wb_deals').select('id,title,details,ends_on').eq('place_id', p.id).gte('ends_on', today).order('ends_on').then(function (r) {
+            var rows = r.data || [];
+            dBox.innerHTML = rows.length ? rows.map(function (d) { return '<div class="item"><strong>' + esc(d.title) + '</strong><p class="meta">Until ' + esc(d.ends_on) + (d.details ? ' · ' + esc(d.details) : '') + '</p><button type="button" class="linkish" data-dd="' + d.id + '">Remove</button></div>'; }).join('') : '<p class="muted">No live deals.</p>';
+            dBox.querySelectorAll('[data-dd]').forEach(function (b) { b.onclick = function () { sb.from('wb_deals').delete().eq('id', b.dataset.dd).then(loadDeals); }; });
+          });
+        };
+        loadDeals();
+        dealf.addEventListener('submit', function (e) {
+          e.preventDefault(); var m = dealf.querySelector('.msg');
+          sb.from('wb_deals').insert({ place_id: p.id, title: dealf.title.value.trim(), details: dealf.details.value.trim() || null, ends_on: dealf.ends.value }).then(function (r) {
+            if (r.error) { msg(m, false, /row-level|policy/i.test(r.error.message) ? 'You can have up to 3 live deals, ending within 90 days, while Featured.' : niceErr(r.error)); return; }
+            msg(m, true, 'Posted. It shows on the site straight away.'); dealf.title.value = ''; dealf.details.value = ''; loadDeals();
+          });
+        });
+      }
       // ---- photos
       var photos = Array.isArray(p.photos) ? p.photos.slice() : [], phBox = box.querySelector('[data-ph]'), phMsg = box.querySelector('[data-phmsg]');
       var savePhotos = function (note) {
