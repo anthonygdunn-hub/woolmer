@@ -109,6 +109,12 @@
     var btns = document.querySelectorAll('.wo-filter [data-f]'), dbtns = document.querySelectorAll('.wo-dist [data-d]');
     var cur = 'all', dist = 30, only = {}, tbtns = document.querySelectorAll('.wo-dist [data-t]');
     try { var sd = +localStorage.getItem('wb_ev_dist'); if ([5, 10, 15, 20, 25, 30].indexOf(sd) >= 0) dist = sd; } catch (x) {}
+    try {
+      var qs = new URLSearchParams(location.search), qm = +qs.get('miles');
+      if ([5, 10, 15, 20, 25, 30].indexOf(qm) >= 0) dist = qm;
+      (qs.get('only') || '').split(',').forEach(function (t) { if (t === 'free' || t === 'kids') only[t] = 1; });
+      if (['today', 'weekend', 'week'].indexOf(qs.get('when')) >= 0) cur = qs.get('when');
+    } catch (x) {}
     var apply = function (k) {
       k = k || cur; cur = k;
       var wd = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].indexOf(f(now, { weekday: 'short' }));
@@ -129,7 +135,7 @@
     btns.forEach(function (b) { b.onclick = function () { apply(b.dataset.f); }; });
     tbtns.forEach(function (b) { b.onclick = function () { if (only[b.dataset.t]) delete only[b.dataset.t]; else only[b.dataset.t] = 1; apply(); }; });
     dbtns.forEach(function (b) { b.onclick = function () { dist = +b.dataset.d; try { localStorage.setItem('wb_ev_dist', dist); } catch (x) {} apply(); }; });
-    apply('all');
+    apply(cur);
   }
 
   function go() { var P = load(); window.WB = window.WB || {}; WB.eventsP = P; P.then(function (evs) { var near = evs.filter(local); renderStrip(near); renderHome(near); renderAll(evs); }); }
