@@ -11,6 +11,33 @@
   var standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
   if (standalone) document.documentElement.classList.add('is-app');
 
+
+  // ---------------------------------------------------------------- cookie-free visit counter (no cookies, no IDs, nothing stored on the phone)
+  (function () {
+    if (!WB.url || /^(localhost|127\.)/.test(location.hostname) || /^\/(admin|account)/.test(location.pathname)) return;
+    var mob = /Mobi|Android|iPhone/i.test(navigator.userAgent);
+    var hit = function (ev, label) {
+      try {
+        var ref = document.referrer ? new URL(document.referrer).hostname.replace(/^www\./, '') : null;
+        if (ref === location.hostname.replace(/^www\./, '')) ref = null;
+        fetch(WB.url + '/rest/v1/wb_hits', { method: 'POST', keepalive: true, headers: { apikey: WB.key, Authorization: 'Bearer ' + WB.key, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+          body: JSON.stringify({ ev: ev, path: location.pathname.slice(0, 200), label: label ? String(label).slice(0, 200) : null, ref: ev === 'view' ? ref : null, mobile: mob }) }).catch(function () {});
+      } catch (e) {}
+    };
+    WB.hit = hit;
+    hit('view');
+    document.addEventListener('click', function (e) {
+      var a = e.target.closest && e.target.closest('a'); if (!a) return;
+      var h = a.getAttribute('href') || '', t = (a.textContent || '').trim();
+      if (/^tel:/.test(h)) hit('call', h.slice(4));
+      else if (/dunnworks\.io/.test(h)) hit('dunnworks', t);
+      else if (/^\/mockup\//.test(h)) hit('mockup', h);
+      else if (/google\.com\/maps/.test(h) || /^Directions$/i.test(t)) hit('directions', t);
+      else if (/event\.ics$/.test(h)) hit('calendar', h);
+      else if (/^https?:/.test(h) && !/woolmer\.info/.test(h)) hit(/menu|order/i.test(t) ? 'menu' : /ticket/i.test(t) ? 'tickets' : 'website', h);
+    }, true);
+  })();
+
   // ---------------------------------------------------------------- offline worker
   if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
     window.addEventListener('load', function () { navigator.serviceWorker.register('/sw.js').catch(function () {}); });

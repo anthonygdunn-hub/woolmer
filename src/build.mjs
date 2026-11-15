@@ -388,7 +388,7 @@ ${groups.map(([c, l]) => `<section class="sec" style="padding-bottom:0"><div cla
       aggregateRating: st && st.reviews ? { '@type': 'AggregateRating', ratingValue: st.rating, reviewCount: st.reviews } : undefined,
     };
     const dirUrl = p.lat ? `https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lng}` : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.name + ' ' + addr)}`;
-    if (wantsMockup(p)) files[`mockup/${p.slug}/index.html`] = mockupPage(p, { SITE, iconSvg: c && ICONS[c.icon] ? `<svg viewBox="0 0 20 20" aria-hidden="true">${ICONS[c.icon]}</svg>` : '' });
+    if (wantsMockup(p)) files[`mockup/${p.slug}/index.html`] = mockupPage(p, { SITE, SB_URL, SB_KEY, iconSvg: c && ICONS[c.icon] ? `<svg viewBox="0 0 20 20" aria-hidden="true">${ICONS[c.icon]}</svg>` : '' });
     files[`p/${p.slug}/index.html`] = page({
       title: `${p.name}, ${p.area || 'Bordon'} — ${c ? c.name : p.category} — woolmer`,
       desc: p.description ? p.description.slice(0, 155) : (p.fhrs_id ? `${p.name} in ${p.area || 'Bordon'}${p.postcode ? ' (' + p.postcode + ')' : ''}: food hygiene rating ${/^[0-5]$/.test(p.hygiene_rating || '') ? p.hygiene_rating + ' out of 5' : 'pending'}, address and opening hours${REV ? ', plus local reviews' : ''}.` : `${p.name}, ${p.category.toLowerCase()} in ${p.area || 'Bordon'}${p.postcode ? ' (' + p.postcode + ')' : ''}: address, phone and opening hours${REV ? ', plus local reviews' : ''}.`),

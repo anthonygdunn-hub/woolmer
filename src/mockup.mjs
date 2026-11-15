@@ -100,7 +100,7 @@ function menuHtml(menu) {
   return menu.slice(0, 8).map((s) => `<div class="msec"><h3>${esc(s.section)}</h3>${(s.items || []).slice(0, 14).map((i) => `<div class="mitem"><div><b>${esc(i.name)}</b>${i.desc ? `<small>${esc(i.desc)}</small>` : ''}</div>${i.price ? `<span>£${esc(String(i.price).replace(/^£/, ''))}</span>` : ''}</div>`).join('')}</div>`).join('');
 }
 
-export function mockupPage(p, { SITE, iconSvg }) {
+export function mockupPage(p, { SITE, iconSvg, SB_URL: SB_URL_M, SB_KEY: SB_KEY_M }) {
   const [kind, T] = themeFor(p.category);
   const name = p.name;
   const addr = [p.address_clean || p.address, p.postcode].filter(Boolean).join(', ');
@@ -220,5 +220,6 @@ ${isFood ? `<section class="s alt" id="menu"><div class="wrap"><p class="eyebrow
 <footer class="f"><div class="wrap"><span>© ${new Date().getFullYear()} ${esc(name)}</span><span>Concept website by <a href="${DW}">Dunnworks</a> · Not the official site of ${esc(name)}</span></div></footer>
 
 <div class="float" id="fl"><button type="button" aria-label="Close" onclick="this.parentNode.remove()">×</button><b>Like it? It could be yours.</b>Is this your business? Dunnworks will build you a real site like this from £750, with no monthly fees. Free changes until you love it.<br><a href="${DW}&utm_content=${encodeURIComponent(p.slug)}">Talk to Dunnworks</a></div>
+<script>(function(){var U=${JSON.stringify(SB_URL_M || '')},K=${JSON.stringify(SB_KEY_M || '')};if(!U||/^(localhost|127\.)/.test(location.hostname))return;var h=function(ev,l){try{fetch(U+'/rest/v1/wb_hits',{method:'POST',keepalive:true,headers:{apikey:K,Authorization:'Bearer '+K,'Content-Type':'application/json',Prefer:'return=minimal'},body:JSON.stringify({ev:ev,path:location.pathname,label:l||null,ref:document.referrer?new URL(document.referrer).hostname.replace(/^www\./,''):null,mobile:/Mobi|Android|iPhone/i.test(navigator.userAgent)})}).catch(function(){});}catch(e){}};h('view');document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a');if(a&&/dunnworks\.io/.test(a.href))h('dunnworks',(a.textContent||'').trim());},true);})();</script>
 </body></html>`;
 }
