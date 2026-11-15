@@ -12,7 +12,7 @@
   if (standalone) document.documentElement.classList.add('is-app');
 
 
-  // ---------------------------------------------------------------- cookie-free visit counter (no cookies, no IDs, nothing stored on the phone)
+  // ---------------------------------------------------------------- cookie-free click counter (no cookies, no IDs, nothing stored on the phone)
   (function () {
     if (!WB.url || /^(localhost|127\.)/.test(location.hostname) || /^\/(admin|account)/.test(location.pathname)) return;
     var mob = /Mobi|Android|iPhone/i.test(navigator.userAgent);
@@ -24,8 +24,7 @@
           body: JSON.stringify({ ev: ev, path: location.pathname.slice(0, 200), label: label ? String(label).slice(0, 200) : null, ref: ev === 'view' ? ref : null, mobile: mob }) }).catch(function () {});
       } catch (e) {}
     };
-    WB.hit = hit;
-    hit('view');
+    WB.hit = hit; // page views are counted by site.js (wb_hit); this only records clicks
     document.addEventListener('click', function (e) {
       var a = e.target.closest && e.target.closest('a'); if (!a) return;
       var h = a.getAttribute('href') || '', t = (a.textContent || '').trim();
