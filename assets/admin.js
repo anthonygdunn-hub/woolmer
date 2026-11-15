@@ -1,3 +1,4 @@
+try { localStorage.setItem('wb_me', '1'); } catch (e) {} // the admin's own device is never counted in stats
 /* woolmer admin — only works for info@dunnworks.io (database rules enforce it, this is just the screen) */
 (function () {
   var root = document.getElementById('adm'), WB = window.WB, esc = WB.esc, sb, tab = location.hash.slice(1) || 'claims';
