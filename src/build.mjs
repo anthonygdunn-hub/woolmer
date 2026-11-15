@@ -319,7 +319,7 @@ function build(data) {
   <h1>Everything local, finally in <span>one place.</span></h1>
   <p class="lead">${places.length} local takeaways, pubs, cafés and shops, with maps, food hygiene ratings, opening hours and menus${REV ? ', and answers from people who live here' : ''}.</p>
   <div class="live" id="live" aria-live="polite" hidden></div>
-  <form class="search" action="/search/" role="search" autocomplete="off"><label class="sr" for="q">Search woolmer</label><input id="q" name="q" type="search" placeholder="Try &quot;chippy&quot;, &quot;pub Headley&quot; or &quot;Lidl&quot;" aria-autocomplete="list" aria-controls="suggest" aria-expanded="false"><button class="btn btn-fountain" type="submit">Search</button><div class="suggest" id="suggest" role="listbox" hidden></div></form>
+  <form class="search" action="/search/" role="search" autocomplete="off"><label class="sr" for="q">Search woolmer</label><input id="q" name="q" type="search" placeholder="Try &quot;chippy&quot;, &quot;pub Headley&quot; or &quot;Lidl&quot;" role="combobox" aria-autocomplete="list" aria-controls="suggest" aria-expanded="false"><button class="btn btn-fountain" type="submit">Search</button><div class="suggest" id="suggest" role="listbox" hidden></div></form>
   <div class="chips"><a class="chip" href="/near/">📍 Near me</a><a class="chip" href="/local/">🗑️ Bin day &amp; local info</a>${CATS.slice(0, 5).map(c => `<a class="chip" href="/${c.slug}/">${esc(c.name)}</a>`).join('')}</div>
 </div><p class="hero-credit">Photo: <a href="https://commons.wikimedia.org/wiki/File:Pond_on_Broxhead_Common,_Hampshire_-_geograph.org.uk_-_5927349.jpg" rel="nofollow">Pond on Broxhead Common</a> by John P Reeves, <a href="https://creativecommons.org/licenses/by-sa/2.0/" rel="nofollow">CC BY-SA 2.0</a></p></section>
 <section class="sec sec-band"><div class="wrap">
@@ -713,7 +713,7 @@ ${groups.map(([c, l]) => `<section class="sec" style="padding-bottom:0"><div cla
     title: 'Near me — woolmer', desc: 'Takeaways, pubs, cafés and shops in Whitehill & Bordon, nearest first, and what\'s open right now.', path: '/near/',
     body: `<section class="ph dk"><div class="wrap"><h1>Near me</h1><p>Sorted by distance from where you are. Your location stays on your phone.</p>
   <div class="near-tools" id="near"><button class="btn btn-fountain btn-sm" type="button" id="near-locate">Use my location</button><button class="chip-t" type="button" id="near-open" aria-pressed="false">Open now</button><label class="sr" for="near-cat">Type of place</label><select id="near-cat"><option value="">Everything</option></select></div></div></section>
-<section class="sec" style="padding-top:24px"><div class="wrap"><p class="muted" id="near-note" aria-live="polite">Loading places…</p><div class="grid" id="near-list"></div></div></section>`,
+<section class="sec" style="padding-top:24px"><div class="wrap"><h2 class="sr">Places near you</h2><p class="muted" id="near-note" aria-live="polite">Loading places…</p><div class="grid" id="near-list"></div></div></section>`,
   });
   sitemap.push('/near/');
   files['saved/index.html'] = page({
