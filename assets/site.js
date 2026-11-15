@@ -111,6 +111,20 @@
       WB.rest('rpc/wb_hit', { method: 'POST', body: { p_path: pth, p_ref: rh } }).catch(function () {});
     }
   } catch (e) {}
+  // compact sign-up boxes on events, listings, what's on and sport
+  document.querySelectorAll('.su-mini').forEach(function (f) {
+    var msg = f.querySelector('.msg');
+    f.addEventListener('submit', function (e) {
+      e.preventDefault(); msg.className = 'msg'; msg.textContent = '';
+      var d = new FormData(f); if (d.get('website')) return;
+      var email = String(d.get('email') || '').trim();
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { msg.className = 'msg err'; msg.textContent = 'Please enter a valid email address.'; return; }
+      if (!d.get('consent')) { msg.className = 'msg err'; msg.textContent = 'Please tick the box so we can email you.'; return; }
+      WB.rest('wb_signups', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: { kind: 'resident', email: email, consent: true, source: (f.dataset.src || '') + ' ' + location.pathname } })
+        .then(function () { f.reset(); msg.className = 'msg ok'; msg.textContent = 'Thanks, you\'re on the list. See you Thursday.'; })
+        .catch(function () { msg.className = 'msg err'; msg.textContent = 'Sorry, that didn\'t go through. Please email info@woolmer.info.'; });
+    });
+  });
   // newsletter / business sign-up
   var f = document.getElementById('su-form');
   if (f) {
@@ -123,7 +137,7 @@
       var email = String(d.get('email') || '').trim();
       if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { msg.className = 'msg err'; msg.textContent = 'Please enter a valid email address.'; return; }
       if (!d.get('consent')) { msg.className = 'msg err'; msg.textContent = 'Please tick the box so we can email you.'; return; }
-      var body = { kind: kind, email: email, name: (d.get('name') || '').trim() || null, consent: true };
+      var body = { kind: kind, email: email, name: (d.get('name') || '').trim() || null, consent: true, source: 'signup ' + location.pathname };
       if (kind === 'business') { body.business_name = (d.get('business_name') || '').trim() || null; body.phone = (d.get('phone') || '').trim() || null; }
       WB.rest('wb_signups', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: body })
         .then(function () { f.reset(); setKind(kind); msg.className = 'msg ok'; msg.textContent = 'Thanks, you\'re on the list.'; })

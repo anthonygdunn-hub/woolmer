@@ -272,6 +272,14 @@ function card(p, stat) {
 }
 const sortPlaces = (a, b) => (isFeatured(b) - isFeatured(a)) || (b.claimed - a.claimed) || a.name.localeCompare(b.name);
 
+const suMini = src => `<form class="su-mini" data-src="${src}" novalidate>
+  <p class="su-mini-h"><strong>What's on in Bordon, every Thursday</strong> One short email with the week's events, new places and local offers. Free, and you can unsubscribe in one click.</p>
+  <div class="su-mini-row"><label class="sr" for="su-mini-email">Email address</label><input id="su-mini-email" name="email" type="email" autocomplete="email" required maxlength="200" placeholder="Your email address"><button class="btn btn-navy" type="submit">Sign me up</button></div>
+  <label class="check"><input type="checkbox" name="consent" required><span>I'm happy for woolmer to email me. <a href="/privacy/">Privacy</a></span></label>
+  <label class="hp" aria-hidden="true">Leave this empty<input name="website" tabindex="-1" autocomplete="off"></label>
+  <p class="msg" role="status" aria-live="polite"></p>
+</form>`;
+
 const signupBlock = `<section class="sec" id="signup"><div class="wrap"><div class="panel" style="display:flex;flex-wrap:wrap;gap:36px">
   <div style="flex:1 1 280px;min-width:0"><h2>This week in Bordon, by email</h2><p class="muted">One short email every Thursday: what's on this week, new places and local offers. Unsubscribe in one click. Run a local business? Tell us and we'll help you get your listing looking its best.</p></div>
   <form class="form" id="su-form" style="flex:2 1 400px;min-width:0" novalidate>
@@ -489,6 +497,7 @@ ${groups.map(([c, l]) => `<section class="sec" style="padding-bottom:0"><div cla
     ${p.claimed ? `<p class="muted" style="font-size:13px;margin:0">This listing is managed by the business. Spotted something wrong? <button class="linkish" type="button" data-report="listing" data-id="${p.id}">Report it</button></p>`
       : `<div class="panel panel-dk dk"><h2 style="font-size:24px">Is this your business?</h2><p>Claim it free to add your menu, opening hours, photos and phone number${REV ? ', and reply to reviews' : ''}.</p><a class="btn btn-fountain" href="/claim/?p=${esc(p.slug)}">Claim this listing</a></div>`}
     ${wantsMockup(p) ? `<div class="panel dw-nudge"><p class="eyebrow" style="color:var(--teal-d)">${p.website ? 'Is this your business?' : 'No website yet?'}</p><p style="margin:6px 0 14px">${p.website ? `Dunnworks, the Bordon studio that built woolmer, has made a free concept of a fresh website for ${esc(p.name)}.` : `${esc(p.name)} doesn't have a website listed. Dunnworks, the Bordon studio that built woolmer, has made a free mock-up of what it could look like.`} Built for real from £750, with no monthly fees.</p><div style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn btn-navy btn-sm" href="/mockup/${esc(p.slug)}/">See your mock-up site</a><a class="btn btn-ghost btn-sm" href="https://dunnworks.io/?utm_source=woolmer&utm_medium=referral&utm_campaign=listing&utm_content=${encodeURIComponent(p.slug)}">Talk to Dunnworks</a></div></div>` : ''}
+    ${suMini('listing')}
   </aside>
 </div></div></section>`,
     });
@@ -534,6 +543,7 @@ ${groups.map(([c, l]) => `<section class="sec" style="padding-bottom:0"><div cla
   ${sports.length > 1 ? `<div class="chips sp-filter" role="group" aria-label="Sport"><button class="chip chip-l on" type="button" data-s="">All sports</button>${sports.map(s => `<button class="chip chip-l" type="button" data-s="${esc(s)}">${esc(s)}</button>`).join('')}</div>` : ''}
   <div class="sp-grid">${clubs.map(card).join('')}</div>
   <div class="panel sp-cta"><h2>Run a local club?</h2><p>Get your results, fixtures and league table on woolmer for free. For football, log in to FA Full-Time, go to <strong>Media &gt; Code snippets</strong>, and send us the codes for <strong>Club - Results</strong>, <strong>Club - Fixtures</strong> and your <strong>Table</strong>. They'll update here automatically every match day. Other sports: just email your results page.</p><a class="btn btn-navy" href="mailto:info@woolmer.info?subject=Club%20results%20on%20woolmer">Email info@woolmer.info</a></div>
+  ${suMini('sport')}
 </div></section>
 <script>
 (function(){
@@ -587,6 +597,7 @@ ${groups.map(([c, l]) => `<section class="sec" style="padding-bottom:0"><div cla
   <div class="chips wo-dist wo-only" role="group" aria-label="Only show"><span class="wo-dist-l">Only show</span><button class="chip chip-l" data-t="free" type="button">Free</button><button class="chip chip-l" data-t="kids" type="button">Good for kids</button></div>
   <div id="wo-all">${days.length ? days.map(d => `<div class="wo-day" data-day="${d}"><h2 class="wo-h">${fmt(d + 'T12:00:00Z', { weekday: 'long', day: 'numeric', month: 'long' })}</h2><div class="evs">${upcoming.filter(e => evShowDay(e) === d).map(e => evCard(e, byId)).join('')}</div></div>`).join('') : ''}</div>
   <p class="muted" id="wo-none"${days.length ? ' hidden' : ''}>Nothing listed yet. Running something? Email <a href="mailto:info@woolmer.info">info@woolmer.info</a> and we'll add it free.</p>
+  ${suMini('whats-on')}
 </div></section>`,
   });
   // one page per event
@@ -620,6 +631,7 @@ ${groups.map(([c, l]) => `<section class="sec" style="padding-bottom:0"><div cla
     ${e.details ? `<p class="evp-det">${esc(e.details)}</p>` : ''}
     <div class="evp-acts">${e.url ? `<a class="btn btn-navy" href="${esc(e.url)}" rel="nofollow noopener" target="_blank">${tl.includes('book') || /£/.test(e.price || '') ? 'Tickets and details' : 'More details'}</a>` : ''}<a class="btn btn-ghost" href="event.ics" download>Add to calendar</a><a class="btn btn-ghost" href="${esc(dirs)}" rel="noopener" target="_blank">Directions</a><button class="btn btn-ghost" type="button" data-share>Share</button></div>
     <p class="muted" style="font-size:13px;margin-top:18px">Details can change, so check with the organiser before you set off. Running this event? <a href="mailto:info@woolmer.info?subject=${encodeURIComponent('Event: ' + e.title)}">Tell us about changes</a>.</p>
+    ${suMini('event')}
   </div>
   ${more.length ? `<aside class="evp-more"><h2 class="wo-h" style="font-size:22px">Also coming up</h2><div class="evs evs-1">${more.map(x => evCard(x, byId)).join('')}</div><a href="/whats-on/">See everything on</a></aside>` : ''}
 </div></section>

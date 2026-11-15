@@ -517,3 +517,12 @@ a.deal:hover{transform:translateY(-4px) rotate(-.4deg);box-shadow:0 18px 32px -2
 .nav a{white-space:nowrap}
 @media (min-width:1101px) and (max-width:1320px){.nav{gap:16px;font-size:13.5px}}
 .me-toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);z-index:99;background:var(--navy);color:#fff;padding:10px 16px;border-radius:999px;font-size:14px;box-shadow:0 8px 24px rgba(0,0,0,.2)}
+.su-mini{margin-top:28px;padding:22px 24px;border:1px solid var(--ln);border-radius:var(--r);background:var(--card)}
+.su-mini-h{margin:0 0 14px;font-size:15px;line-height:1.5;color:var(--mu)}
+.su-mini-h strong{display:block;font-family:'Inter Tight',sans-serif;font-weight:500;font-size:20px;color:var(--ink);margin-bottom:4px}
+.su-mini-row{display:flex;gap:10px;flex-wrap:wrap}
+.su-mini-row input{flex:1 1 220px;min-width:0;font:inherit;padding:12px 14px;border:1px solid var(--ln2);border-radius:12px;background:#fff;color:var(--ink)}
+.su-mini .check{margin-top:12px;font-size:13px}
+.su-mini .msg{margin:10px 0 0;font-size:14px}
+.su-mini .msg:empty{display:none}
+aside .su-mini{margin-top:0}
