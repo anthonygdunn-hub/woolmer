@@ -13,7 +13,7 @@
   function hm(d) { return f(d, { hour: 'numeric', minute: '2-digit', hour12: true }).replace(':00', '').replace(' ', ''); }
   function end(e) { return e.ends_at ? new Date(e.ends_at) : new Date(new Date(e.starts_at).getTime() + 3 * 36e5); }
   function when(e) { return hm(e.starts_at) + (e.ends_at ? '–' + hm(e.ends_at) : ''); }
-  var HOME = [51.1125, -0.862], LOCAL_MI = 6;
+  var HOME = [51.1125, -0.862], LOCAL_MI = 5;
   function miles(e) {
     var la = e.lat != null ? e.lat : e.place && e.place.lat, lo = e.lng != null ? e.lng : e.place && e.place.lng;
     if (la == null || lo == null) return 0;
@@ -21,6 +21,17 @@
     var a = Math.sin(dLa / 2) * Math.sin(dLa / 2) + Math.cos(HOME[0] * r) * Math.cos(la * r) * Math.sin(dLo / 2) * Math.sin(dLo / 2);
     return 3958.8 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   }
+  var TAGS = { free: ['Free', 'g'], kids: ['Good for kids', 't'], christmas: ['Christmas', 'r'], outdoor: ['Outdoors', 'g'], indoor: ['Indoors', 'n'], dogs: ['Dog friendly', 't'], access: ['Step-free', 'n'], book: ['Book ahead', 'o'], adults: ['Adults only', 'n'] };
+  function tagList(e) {
+    var t = {}; (e.tags || []).forEach(function (k) { t[k] = 1; });
+    if (/^\s*free\b|free entry|\bfree\s*$/i.test(e.price || '')) t.free = 1;
+    if (e.kind === 'Family') t.kids = 1;
+    if (t.adults) delete t.kids;
+    return Object.keys(TAGS).filter(function (k) { return t[k]; });
+  }
+  function tagsHtml(e) { var l = tagList(e); return l.length ? '<p class="ev-tags">' + l.map(function (k) { return '<span class="evt evt-' + TAGS[k][1] + '">' + TAGS[k][0] + '</span>'; }).join('') + '</p>' : ''; }
+  function slugify(x) { return String(x).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/&/g, 'and').replace(/['’]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''); }
+  function path(e) { return '/whats-on/' + slugify(e.title).slice(0, 60) + '-' + day(e.starts_at) + '-' + String(e.id).slice(0, 4) + '/'; }
   function local(e) { return miles(e) <= LOCAL_MI; }
   var now = new Date(), today = day(now), tomorrow = day(new Date(now.getTime() + 864e5));
 
@@ -36,16 +47,16 @@
   function card(e) {
     var venue = e.place ? '<a href="/p/' + esc(e.place.slug) + '/">' + esc(e.place.name) + '</a>' : esc(e.venue || ''), fl = flag(e);
     var mi = miles(e), far = mi > LOCAL_MI ? '<span class="ev-far">' + Math.round(mi) + ' miles' + (e.town ? ' · ' + esc(e.town) : '') + '</span>' : '';
-    return '<article class="ev' + (fl === 'On now' ? ' ev-live' : '') + '" data-day="' + day(e.starts_at) + '" data-mi="' + Math.round(mi) + '" data-start="' + esc(e.starts_at) + '">' +
+    return '<article class="ev' + (fl === 'On now' ? ' ev-live' : '') + '" data-day="' + day(e.starts_at) + '" data-mi="' + Math.round(mi) + '" data-tags="' + tagList(e).join(' ') + '" data-start="' + esc(e.starts_at) + '">' +
       '<div class="ev-date"><span>' + f(e.starts_at, { weekday: 'short' }) + '</span><b>' + f(e.starts_at, { day: 'numeric' }) + '</b><span>' + f(e.starts_at, { month: 'short' }) + '</span></div>' +
       '<div class="ev-body"><p class="ev-when">' + (fl ? '<span class="ev-flag">' + fl + '</span>' : '') + far + when(e) + (e.kind ? ' · ' + esc(e.kind) : '') + '</p>' +
-      '<h3>' + (e.url ? '<a href="' + esc(e.url) + '" rel="nofollow noopener" target="_blank">' + esc(e.title) + '</a>' : esc(e.title)) + '</h3>' +
+      '<h3><a href="' + path(e) + '">' + esc(e.title) + '</a></h3>' + tagsHtml(e) +
       (venue ? '<p class="ev-venue">' + venue + '</p>' : '') + (e.details ? '<p class="ev-det">' + esc(e.details) + '</p>' : '') + (e.price ? '<p class="ev-price">' + esc(e.price) + '</p>' : '') +
       '</div></article>';
   }
 
   function load() {
-    var cols = 'id,title,place_id,venue,starts_at,ends_at,details,price,url,kind,lat,lng,town,wb_places(slug,name,lat,lng)';
+    var cols = 'id,title,place_id,venue,starts_at,ends_at,details,price,url,kind,lat,lng,town,tags,wb_places(slug,name,lat,lng)';
     var since = new Date(Date.now() - 864e5).toISOString();
     var live = WB.url ? fetch(WB.url + '/rest/v1/wb_events?select=' + cols + '&published=eq.true&starts_at=gte.' + encodeURIComponent(since) + '&order=starts_at&limit=1000', { headers: { apikey: WB.key, Authorization: 'Bearer ' + WB.key } })
       .then(function (r) { if (!r.ok) throw r; return r.json(); })
@@ -68,7 +79,7 @@
     var items = pick.map(function (e) {
       var fl = flag(e) || f(e.starts_at, { weekday: 'short', day: 'numeric', month: 'short' });
       var where = e.place ? e.place.name : (e.venue || '');
-      return '<a class="es-item" href="/whats-on/"><span class="es-flag' + (fl === 'On now' ? ' es-live' : '') + '">' + esc(fl) + '</span><b>' + esc(e.title) + '</b><span class="es-meta">' + esc(when(e)) + (where ? ' · ' + esc(where) : '') + '</span></a>';
+      return '<a class="es-item" href="' + path(e) + '"><span class="es-flag' + (fl === 'On now' ? ' es-live' : '') + '">' + esc(fl) + '</span><b>' + esc(e.title) + '</b><span class="es-meta">' + esc(when(e)) + (where ? ' · ' + esc(where) : '') + '</span></a>';
     });
     strip.innerHTML = '<div class="wrap"><span class="es-label"><i aria-hidden="true"></i>What\'s on</span><div class="es-track" aria-live="polite">' + items.join('') + '</div><a class="es-all" href="/whats-on/">All events</a><button class="es-x" type="button" aria-label="Hide events">×</button></div>';
     strip.hidden = false;
@@ -96,8 +107,8 @@
     }).join('');
     var none = document.getElementById('wo-none');
     var btns = document.querySelectorAll('.wo-filter [data-f]'), dbtns = document.querySelectorAll('.wo-dist [data-d]');
-    var cur = 'all', dist = 30;
-    try { var sd = +localStorage.getItem('wb_ev_dist'); if ([6, 15, 30].indexOf(sd) >= 0) dist = sd; } catch (x) {}
+    var cur = 'all', dist = 30, only = {}, tbtns = document.querySelectorAll('.wo-dist [data-t]');
+    try { var sd = +localStorage.getItem('wb_ev_dist'); if ([5, 10, 15, 20, 25, 30].indexOf(sd) >= 0) dist = sd; } catch (x) {}
     var apply = function (k) {
       k = k || cur; cur = k;
       var wd = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].indexOf(f(now, { weekday: 'short' }));
@@ -106,15 +117,17 @@
       allList.querySelectorAll('.wo-day').forEach(function (el) {
         var d = el.dataset.day, ok = k === 'all' || (k === 'today' && d === today) || (k === 'week' && d <= wk) || (k === 'weekend' && d >= fri && d <= sun);
         var any = 0;
-        el.querySelectorAll('.ev').forEach(function (c) { var v = ok && +c.dataset.mi <= dist; c.hidden = !v; if (v) any++; });
+        el.querySelectorAll('.ev').forEach(function (c) { var tg = (c.dataset.tags || '').split(' '), v = ok && +c.dataset.mi <= dist && Object.keys(only).every(function (t) { return tg.indexOf(t) >= 0; }); c.hidden = !v; if (v) any++; });
         el.hidden = !any; if (any) shown++;
       });
       none.hidden = !!shown;
-      none.innerHTML = evs.length ? (dist < 30 ? 'Nothing that close for those dates. Try a wider distance.' : 'Nothing on for those dates yet.') : 'Nothing listed yet. Running something? Email <a href="mailto:info@woolmer.info">info@woolmer.info</a> and we\'ll add it free.';
+      none.innerHTML = evs.length ? (dist < 30 || Object.keys(only).length ? 'Nothing matches for those dates yet. Try a wider distance or fewer filters.' : 'Nothing on for those dates yet.') : 'Nothing listed yet. Running something? Email <a href="mailto:info@woolmer.info">info@woolmer.info</a> and we\'ll add it free.';
       btns.forEach(function (b) { b.classList.toggle('on', b.dataset.f === k); b.setAttribute('aria-pressed', b.dataset.f === k); });
+      tbtns.forEach(function (b) { b.classList.toggle('on', !!only[b.dataset.t]); b.setAttribute('aria-pressed', !!only[b.dataset.t]); });
       dbtns.forEach(function (b) { b.classList.toggle('on', +b.dataset.d === dist); b.setAttribute('aria-pressed', +b.dataset.d === dist); });
     };
     btns.forEach(function (b) { b.onclick = function () { apply(b.dataset.f); }; });
+    tbtns.forEach(function (b) { b.onclick = function () { if (only[b.dataset.t]) delete only[b.dataset.t]; else only[b.dataset.t] = 1; apply(); }; });
     dbtns.forEach(function (b) { b.onclick = function () { dist = +b.dataset.d; try { localStorage.setItem('wb_ev_dist', dist); } catch (x) {} apply(); }; });
     apply('all');
   }

@@ -461,3 +461,32 @@ a.deal:hover{transform:translateY(-4px) rotate(-.4deg);box-shadow:0 18px 32px -2
 .wo-dist-l{font-size:13px;font-weight:600;color:var(--mu);margin-right:4px}
 .ev-far{font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:#FFF1EC;color:#C2410C}
 .ev[hidden],.wo-day[hidden]{display:none}
+
+/* event tags + event page */
+.ev-tags{display:flex;flex-wrap:wrap;gap:6px;margin:2px 0}
+.evt{font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:999px;line-height:1.3;white-space:nowrap}
+.evt-g{background:#E3F6EC;color:#166534}.evt-t{background:#DDF3F2;color:#0F6E6A}.evt-r{background:#FDE8E8;color:#B42318}.evt-o{background:#FFF1EC;color:#C2410C}.evt-n{background:#EEF1F5;color:#334155}
+.evp-hero h1{margin:4px 0 10px}
+.evp-top{display:flex;gap:18px;align-items:flex-start;margin-top:10px}
+.evp-date{width:76px;padding:12px 0;background:#FF6B4A}
+.evp-date b{font-size:32px}
+.evp-tags .evt{font-size:13px;padding:4px 11px}
+.evp{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:32px;align-items:start}
+.evp-facts{display:grid;gap:14px;margin:0 0 18px;padding:18px;background:var(--card);border:1px solid var(--ln);border-radius:var(--r)}
+.evp-facts div{display:grid;grid-template-columns:80px 1fr;gap:10px}
+.evp-facts dt{font-weight:700;color:var(--mu);font-size:13px;text-transform:uppercase;letter-spacing:.06em;padding-top:2px}
+.evp-facts dd{margin:0;font-weight:600}
+.evp-det{font-size:17px;line-height:1.6}
+.evp-acts{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
+.evs-1{grid-template-columns:1fr}
+.evp-more>a{display:inline-block;margin-top:12px;font-weight:600}
+@media (max-width:800px){.evp{grid-template-columns:1fr}.evp-top{gap:12px}.evp-date{width:62px}.evp-date b{font-size:26px}}
+
+.wo-dist{margin-top:12px}
+.wo-dist-l{min-width:64px}
+.wo-only{margin-bottom:34px}
+.wo-only + #wo-all .wo-day:first-child .wo-h{margin-top:0}
+.wo-filter{margin-bottom:6px}
+.wo-dist .chip{cursor:pointer;font:inherit;font-size:13px}
+.wo-dist .chip.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+.wo-dist [data-t].on{background:var(--teal-d);border-color:var(--teal-d)}

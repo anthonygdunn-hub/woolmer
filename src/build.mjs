@@ -36,7 +36,7 @@ async function load() {
     sb(`wb_places?select=${cols}&listable=eq.true&order=name`),
     sb('wb_place_stats?select=id,reviews,rating'),
     sb('wb_settings?select=key,value'),
-    sb(`wb_events?select=id,title,place_id,venue,starts_at,ends_at,details,price,url,kind,lat,lng,town&published=eq.true&starts_at=gte.${since}&order=starts_at&limit=1000`).catch(() => []),
+    sb(`wb_events?select=id,title,place_id,venue,starts_at,ends_at,details,price,url,kind,lat,lng,town,tags&published=eq.true&starts_at=gte.${since}&order=starts_at&limit=1000`).catch(() => []),
   ]);
   return { places, stats, settings: Object.fromEntries(settings.map(s => [s.key, s.value])), events };
 }
@@ -53,12 +53,28 @@ const fmt = (d, o) => new Intl.DateTimeFormat('en-GB', { timeZone: TZ, ...o }).f
 const ukDay = d => fmt(d, { year: 'numeric', month: '2-digit', day: '2-digit' }).split('/').reverse().join('-');
 const evTime = e => fmt(e.starts_at, { hour: 'numeric', minute: '2-digit', hour12: true }).replace(':00', '').replace(' ', '') + (e.ends_at ? '–' + fmt(e.ends_at, { hour: 'numeric', minute: '2-digit', hour12: true }).replace(':00', '').replace(' ', '') : '');
 const evEnd = e => new Date(e.ends_at || new Date(e.starts_at).getTime() + 3 * 36e5);
+
+// ---- event tags, distance and pages
+const EV_TAGS = { free: ['Free', 'g'], kids: ['Good for kids', 't'], christmas: ['Christmas', 'r'], outdoor: ['Outdoors', 'g'], indoor: ['Indoors', 'n'], dogs: ['Dog friendly', 't'], access: ['Step-free', 'n'], book: ['Book ahead', 'o'], adults: ['Adults only', 'n'] };
+const evTagList = e => {
+  const t = new Set(e.tags || []);
+  if (/^\s*free\b|free entry|\bfree\s*$/i.test(e.price || '')) t.add('free');
+  if (e.kind === 'Family') t.add('kids');
+  if (t.has('adults')) t.delete('kids');
+  return Object.keys(EV_TAGS).filter(k => t.has(k));
+};
+const evTagsHtml = (e, cls = 'ev-tags') => { const l = evTagList(e); return l.length ? `<p class="${cls}">${l.map(k => `<span class="evt evt-${EV_TAGS[k][1]}">${EV_TAGS[k][0]}</span>`).join('')}</p>` : ''; };
+const HOME_LL = [51.1125, -0.862];
+const evMiles = (e, pl) => { const la = e.lat ?? (pl && pl.lat), lo = e.lng ?? (pl && pl.lng); if (la == null || lo == null) return 0; const r = Math.PI / 180, a = Math.sin((la - HOME_LL[0]) * r / 2) ** 2 + Math.cos(HOME_LL[0] * r) * Math.cos(la * r) * Math.sin((lo - HOME_LL[1]) * r / 2) ** 2; return 3958.8 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)); };
+const evSlug = e => `${slugify(e.title).slice(0, 60)}-${ukDay(e.starts_at)}-${String(e.id).slice(0, 4)}`;
+const evPath = e => `/whats-on/${evSlug(e)}/`;
+
 function evCard(e, bySlug) {
   const pl = e.place_id && bySlug[e.place_id];
   const venue = pl ? `<a href="/p/${pl.slug}/">${esc(pl.name)}</a>` : esc(e.venue || '');
   return `<article class="ev" data-start="${esc(e.starts_at)}" data-end="${esc(evEnd(e).toISOString())}" data-day="${ukDay(e.starts_at)}">
   <div class="ev-date"><span>${fmt(e.starts_at, { weekday: 'short' })}</span><b>${fmt(e.starts_at, { day: 'numeric' })}</b><span>${fmt(e.starts_at, { month: 'short' })}</span></div>
-  <div class="ev-body"><p class="ev-when"><span class="ev-flag" hidden></span>${evTime(e)}${e.kind ? ` · ${esc(e.kind)}` : ''}</p><h3>${e.url ? `<a href="${esc(e.url)}" rel="nofollow noopener" target="_blank">${esc(e.title)}</a>` : esc(e.title)}</h3>${venue ? `<p class="ev-venue">${venue}</p>` : ''}${e.details ? `<p class="ev-det">${esc(e.details)}</p>` : ''}${e.price ? `<p class="ev-price">${esc(e.price)}</p>` : ''}</div>
+  <div class="ev-body"><p class="ev-when"><span class="ev-flag" hidden></span>${evTime(e)}${e.kind ? ` · ${esc(e.kind)}` : ''}</p><h3><a href="${evPath(e)}">${esc(e.title)}</a></h3>${evTagsHtml(e)}${venue ? `<p class="ev-venue">${venue}</p>` : ''}${e.details ? `<p class="ev-det">${esc(e.details)}</p>` : ''}${e.price ? `<p class="ev-price">${esc(e.price)}</p>` : ''}</div>
 </article>`;
 }
 
@@ -460,11 +476,50 @@ ${groups.map(([c, l]) => `<section class="sec" style="padding-bottom:0"><div cla
     body: `<section class="ph dk"><div class="wrap"><nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a> / What's on</nav><h1>What's on</h1><p>Everything on in Whitehill &amp; Bordon, plus the best days out within 30 miles, up to six months ahead. Most of us will happily drive half an hour for a good show, market or family day, so we list those too. Use the distance buttons to keep it close to home.</p></div></section>
 <section class="sec" style="padding-top:28px"><div class="wrap">
   <div class="chips wo-filter" role="group" aria-label="Show"><button class="chip chip-l on" data-f="all" type="button">Everything</button><button class="chip chip-l" data-f="today" type="button">Today</button><button class="chip chip-l" data-f="weekend" type="button">This weekend</button><button class="chip chip-l" data-f="week" type="button">Next 7 days</button></div>
-  <div class="chips wo-dist" role="group" aria-label="How far"><span class="wo-dist-l">How far</span><button class="chip chip-l" data-d="6" type="button">Bordon area</button><button class="chip chip-l" data-d="15" type="button">Up to 15 miles</button><button class="chip chip-l on" data-d="30" type="button">Up to 30 miles</button></div>
+  <div class="chips wo-dist" role="group" aria-label="How far"><span class="wo-dist-l">How far</span>${[5, 10, 15, 20, 25, 30].map(n => `<button class="chip chip-l${n === 30 ? ' on' : ''}" data-d="${n}" type="button">${n} miles</button>`).join('')}</div>
+  <div class="chips wo-dist wo-only" role="group" aria-label="Only show"><span class="wo-dist-l">Only show</span><button class="chip chip-l" data-t="free" type="button">Free</button><button class="chip chip-l" data-t="kids" type="button">Good for kids</button></div>
   <div id="wo-all">${days.length ? days.map(d => `<div class="wo-day" data-day="${d}"><h2 class="wo-h">${fmt(d + 'T12:00:00Z', { weekday: 'long', day: 'numeric', month: 'long' })}</h2><div class="evs">${upcoming.filter(e => ukDay(e.starts_at) === d).map(e => evCard(e, byId)).join('')}</div></div>`).join('') : ''}</div>
   <p class="muted" id="wo-none"${days.length ? ' hidden' : ''}>Nothing listed yet. Running something? Email <a href="mailto:info@woolmer.info">info@woolmer.info</a> and we'll add it free.</p>
 </div></section>`,
   });
+  // one page per event
+  for (const e of upcoming) {
+    const pl = e.place_id && byId[e.place_id];
+    const mi = evMiles(e, pl), where = pl ? pl.name : (e.venue || 'Whitehill & Bordon');
+    const la = e.lat ?? (pl && pl.lat), lo = e.lng ?? (pl && pl.lng);
+    const dirs = la != null && lo != null ? `https://www.google.com/maps/dir/?api=1&destination=${la},${lo}` : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([where, pl && pl.postcode, e.town].filter(Boolean).join(', '))}`;
+    const st = new Date(e.starts_at), en = evEnd(e);
+    const ics = d => d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+    const icsEsc = x => String(x).replace(/\\/g, '\\\\').replace(/[,;]/g, m => '\\' + m).replace(/\n/g, '\\n');
+    files[`whats-on/${evSlug(e)}/event.ics`] = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//woolmer//EN', 'BEGIN:VEVENT', `UID:${e.id}@woolmer.info`, `DTSTAMP:${ics(new Date())}`, `DTSTART:${ics(st)}`, `DTEND:${ics(en)}`, `SUMMARY:${icsEsc(e.title)}`, `LOCATION:${icsEsc([where, e.town].filter(Boolean).join(', '))}`, `DESCRIPTION:${icsEsc((e.details || '') + ' ' + SITE + evPath(e))}`, 'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
+    const more = upcoming.filter(x => x.id !== e.id && evMiles(x, x.place_id && byId[x.place_id]) <= Math.max(5, mi + 5)).slice(0, 4);
+    const dateLine = fmt(e.starts_at, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) + ', ' + evTime(e) + (e.ends_at && ukDay(e.ends_at) !== ukDay(e.starts_at) ? ` until ${fmt(e.ends_at, { weekday: 'short', day: 'numeric', month: 'short' })}` : '');
+    const tl = evTagList(e);
+    files[`whats-on/${evSlug(e)}/index.html`] = page({
+      title: `${e.title}, ${fmt(e.starts_at, { day: 'numeric', month: 'short' })} — What's on near Bordon | woolmer`,
+      desc: `${e.title} at ${where}${e.town ? ', ' + e.town : ''} on ${fmt(e.starts_at, { weekday: 'long', day: 'numeric', month: 'long' })}. ${e.details || ''}`.slice(0, 160),
+      path: evPath(e),
+      jsonld: { '@context': 'https://schema.org', '@type': 'Event', name: e.title, startDate: e.starts_at, endDate: en.toISOString(), eventStatus: 'https://schema.org/EventScheduled', eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode', description: e.details || undefined, isAccessibleForFree: tl.includes('free') || undefined, url: SITE + evPath(e), location: { '@type': 'Place', name: where, address: pl ? [pl.address_clean, pl.postcode].filter(Boolean).join(', ') || 'Whitehill & Bordon' : [e.venue, e.town].filter(Boolean).join(', ') || 'Hampshire', ...(la != null ? { geo: { '@type': 'GeoCoordinates', latitude: la, longitude: lo } } : {}) } },
+      body: `<section class="ph dk evp-hero"><div class="wrap"><nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a> / <a href="/whats-on/">What's on</a></nav>
+  <div class="evp-top"><div class="ev-date evp-date"><span>${fmt(e.starts_at, { weekday: 'short' })}</span><b>${fmt(e.starts_at, { day: 'numeric' })}</b><span>${fmt(e.starts_at, { month: 'short' })}</span></div>
+  <div><p class="eyebrow" style="color:var(--fountain)">${esc(e.kind || 'Event')}${mi > 5 ? ` · ${Math.round(mi)} miles from Bordon` : ' · Bordon area'}</p><h1>${esc(e.title)}</h1>${evTagsHtml(e, 'ev-tags evp-tags')}</div></div></div></section>
+<section class="sec" style="padding-top:28px"><div class="wrap evp">
+  <div class="evp-main">
+    <dl class="evp-facts">
+      <div><dt>When</dt><dd>${esc(dateLine)}</dd></div>
+      <div><dt>Where</dt><dd>${pl ? `<a href="/p/${pl.slug}/">${esc(pl.name)}</a>` : esc(e.venue || 'Whitehill & Bordon')}${e.town ? `, ${esc(e.town)}` : ''}${mi > 5 ? `<br><span class="muted">About ${Math.round(mi)} miles from Bordon</span>` : ''}</dd></div>
+      ${e.price ? `<div><dt>Price</dt><dd>${esc(e.price)}</dd></div>` : ''}
+    </dl>
+    ${e.details ? `<p class="evp-det">${esc(e.details)}</p>` : ''}
+    <div class="evp-acts">${e.url ? `<a class="btn btn-navy" href="${esc(e.url)}" rel="nofollow noopener" target="_blank">${tl.includes('book') || /£/.test(e.price || '') ? 'Tickets and details' : 'More details'}</a>` : ''}<a class="btn btn-ghost" href="event.ics" download>Add to calendar</a><a class="btn btn-ghost" href="${esc(dirs)}" rel="noopener" target="_blank">Directions</a><button class="btn btn-ghost" type="button" data-share>Share</button></div>
+    <p class="muted" style="font-size:13px;margin-top:18px">Details can change, so check with the organiser before you set off. Running this event? <a href="mailto:info@woolmer.info?subject=${encodeURIComponent('Event: ' + e.title)}">Tell us about changes</a>.</p>
+  </div>
+  ${more.length ? `<aside class="evp-more"><h2 class="wo-h" style="font-size:22px">Also coming up</h2><div class="evs evs-1">${more.map(x => evCard(x, byId)).join('')}</div><a href="/whats-on/">See everything on</a></aside>` : ''}
+</div></section>
+<script>document.querySelectorAll('[data-share]').forEach(function(b){b.onclick=function(){var d={title:document.title,url:location.href};if(navigator.share)navigator.share(d).catch(function(){});else if(navigator.clipboard)navigator.clipboard.writeText(location.href).then(function(){b.textContent='Link copied';});};});</script>`,
+    });
+    sitemap.push(evPath(e));
+  }
   files['events.json'] = JSON.stringify(upcoming.map(e => { const pl = e.place_id && byId[e.place_id]; return { ...e, place: pl ? { slug: pl.slug, name: pl.name, lat: pl.lat, lng: pl.lng } : null }; }));
 
   // search
