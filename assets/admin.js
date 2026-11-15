@@ -1,7 +1,7 @@
 /* woolmer admin — only works for info@dunnworks.io (database rules enforce it, this is just the screen) */
 (function () {
   var root = document.getElementById('adm'), WB = window.WB, esc = WB.esc, sb, tab = location.hash.slice(1) || 'claims';
-  var TABS = [['claims', 'Claims'], ['subs', 'New listings'], ['sugg', 'Found online'], ['mod', 'Moderation'], ['reports', 'Reports'], ['events', "What's on"], ['walk', 'Street walk'], ['places', 'Listings'], ['signups', 'Sign-ups'], ['stats', 'Visitors'], ['alerts', 'Alerts'], ['settings', 'Settings']];
+  var TABS = [['claims', 'Claims'], ['subs', 'New listings'], ['sugg', 'Found online'], ['mod', 'Moderation'], ['reports', 'Reports'], ['events', "What's on"], ['sport', 'Sport'], ['walk', 'Street walk'], ['places', 'Listings'], ['signups', 'Sign-ups'], ['stats', 'Visitors'], ['alerts', 'Alerts'], ['settings', 'Settings']];
   function when(d) { return d ? new Date(d).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''; }
   function err(e) { alert(String(e && e.message || e)); }
   function chk(r) { if (r.error) throw r.error; return r.data; }
@@ -46,11 +46,30 @@
         '<div class="tabs">' + TABS.map(function (t) { return '<button data-t="' + t[0] + '"' + (t[0] === tab ? ' class="on"' : '') + '>' + t[1] + (n[t[0]] ? '<span class="cnt">' + n[t[0]] + '</span>' : '') + '</button>'; }).join('') + '</div><div id="pane"></div>';
       document.getElementById('so').onclick = function () { sb.auth.signOut().then(function () { location.reload(); }); };
       root.querySelectorAll('[data-t]').forEach(function (b) { b.onclick = function () { tab = b.dataset.t; location.hash = tab; shell(); }; });
-      ({ sugg: sugg, subs: subs, claims: claims, mod: mod, reports: reports, featured: featured, events: events, walk: walk, places: places, signups: signups, stats: stats, alerts: alerts, settings: settings })[tab]();
+      ({ sport: sport, sugg: sugg, subs: subs, claims: claims, mod: mod, reports: reports, featured: featured, events: events, walk: walk, places: places, signups: signups, stats: stats, alerts: alerts, settings: settings })[tab]();
     });
   }
   function pane(h) { document.getElementById('pane').innerHTML = h; }
   function act(sel, fn) { document.querySelectorAll(sel).forEach(function (b) { b.onclick = function () { b.disabled = true; Promise.resolve(fn(b)).then(shell).catch(function (e) { b.disabled = false; err(e); }); }; }); }
+
+  // ------------------------------------------------ local sport clubs: paste FA Full-Time code snippet numbers
+  function sport() {
+    sb.from('wb_sport_clubs').select('*').order('sort').then(function (r) {
+      var rows = r.data || [];
+      var f = function (c, k, l) { return '<label style="display:block;font-size:13px">' + l + '<input class="in" data-k="' + k + '" value="' + esc(c[k] || '') + '" placeholder="e.g. 123456789" inputmode="numeric" style="width:100%"></label>'; };
+      pane('<p class="meta">Paste the number from each FA Full-Time code snippet (the digits in <code>lrcode</code> or <code>lrep…</code>). Pages update on the next hourly build.</p>' + rows.map(function (c) {
+        return '<div class="item" data-club="' + c.id + '"><strong>' + esc(c.name) + '</strong> <span class="meta">' + esc(c.sport) + (c.area ? ' · ' + esc(c.area) : '') + '</span>' +
+          '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:8px 0">' + f(c, 'ft_results', 'Club results') + f(c, 'ft_fixtures', 'Club fixtures') + f(c, 'ft_table', 'League table') + '</div>' +
+          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 0 8px"><label style="font-size:13px">League<input class="in" data-k="league" value="' + esc(c.league || '') + '" style="width:100%"></label><label style="font-size:13px">Club website<input class="in" data-k="website" value="' + esc(c.website || '') + '" style="width:100%"></label></div>' +
+          '<div class="acts"><button class="btn btn-navy btn-sm" data-save="' + c.id + '">Save</button></div></div>';
+      }).join(''));
+      act('[data-save]', function (b) {
+        var box = document.querySelector('[data-club="' + b.dataset.save + '"]'), up = {};
+        box.querySelectorAll('[data-k]').forEach(function (i) { var v = i.value.trim(); if (/^ft_/.test(i.dataset.k)) { var m = v.match(/\d{5,12}/); v = m ? m[0] : ''; } up[i.dataset.k] = v || null; });
+        return sb.from('wb_sport_clubs').update(up).eq('id', +b.dataset.save).then(chk);
+      });
+    });
+  }
 
   // ------------------------------------------------ details the nightly sweep found online (nothing goes live until approved)
   function sugg() {

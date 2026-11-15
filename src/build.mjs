@@ -32,13 +32,14 @@ async function load() {
   if (FIXTURE) return JSON.parse(fs.readFileSync(path.join(ROOT, 'data/fixture.json'), 'utf8'));
   const cols = 'id,slug,name,category,address,postcode,area,hygiene_rating,rated_on,lat,lng,fhrs_id,claimed,featured_until,phone,website,email,description,hours,menu,menu_url,photos,tags';
   const since = new Date(Date.now() - 36e5 * 24).toISOString();
-  const [places, stats, settings, events] = await Promise.all([
+  const [places, stats, settings, events, sport] = await Promise.all([
     sb(`wb_places?select=${cols}&listable=eq.true&order=name`),
     sb('wb_place_stats?select=id,reviews,rating'),
     sb('wb_settings?select=key,value'),
     sb(`wb_events?select=id,title,place_id,venue,starts_at,ends_at,details,price,url,kind,lat,lng,town,tags&published=eq.true&starts_at=gte.${since}&order=starts_at&limit=1000`).catch(() => []),
+    sb('wb_sport_clubs?select=*&published=eq.true&order=sort').catch(() => []),
   ]);
-  return { places, stats, settings: Object.fromEntries(settings.map(s => [s.key, s.value])), events };
+  return { places, stats, settings: Object.fromEntries(settings.map(s => [s.key, s.value])), events, sport };
 }
 
 // ------------------------------------------------------------------ helpers
@@ -151,7 +152,7 @@ const TAB_ICONS = {
   heart: ic('<path d="M12 20s-7.5-4.6-7.5-10A4.3 4.3 0 0 1 12 7.3 4.3 4.3 0 0 1 19.5 10c0 5.4-7.5 10-7.5 10z"/>'),
   user: ic('<circle cx="12" cy="8.5" r="3.5"/><path d="M5 20c1.2-3.6 4-5.5 7-5.5s5.8 1.9 7 5.5"/>'),
 };
-const NAV = [['Takeaways', '/takeaways/'], ['Pubs & bars', '/pubs-and-bars/'], ['Cafés', '/cafes-and-restaurants/'], ['Shops', '/shops/'], ["What's on", '/whats-on/'], ['Ask the town', '/ask/'], ['For businesses', '/business/']];
+const NAV = [['Takeaways', '/takeaways/'], ['Pubs & bars', '/pubs-and-bars/'], ['Cafés', '/cafes-and-restaurants/'], ['Shops', '/shops/'], ["What's on", '/whats-on/'], ['Sport', '/sport/'], ['Ask the town', '/ask/'], ['For businesses', '/business/']];
 const DW_TILE = `<section class="dw-tile-wrap"><div class="wrap"><div class="dw-tile">
   <div class="dw-tile-art" aria-hidden="true"><span></span><span></span><span></span></div>
   <div class="dw-tile-txt"><p class="eyebrow">For local businesses</p><h2>See your new website before you pay a penny</h2><p>Every local business on woolmer has a free mock-up website waiting. Find yours and tap <b>See your mock-up site</b>. Dunnworks, the Bordon studio that built woolmer, can make it real from £750, with no monthly fees.</p></div>
@@ -215,7 +216,7 @@ ${p.startsWith('/p/') || p.startsWith('/admin') || p.startsWith('/account') ? ''
       <p style="margin:12px 0 0">An independent guide to Whitehill &amp; Bordon, built by people who live here. Named after the <a href="/#why-woolmer">Royal Forest of Woolmer</a>.</p>
     </div>
     <div class="cols">
-      <div><strong>Explore</strong>${CATS.slice(0, 5).map(c => `<a href="/${c.slug}/">${esc(c.name)}</a>`).join('')}<a href="/whats-on/">What's on</a><a href="/local/">Bins, tip &amp; local info</a><a href="/search/">Search</a></div>
+      <div><strong>Explore</strong>${CATS.slice(0, 5).map(c => `<a href="/${c.slug}/">${esc(c.name)}</a>`).join('')}<a href="/whats-on/">What's on</a><a href="/sport/">Local sport</a><a href="/local/">Bins, tip &amp; local info</a><a href="/search/">Search</a></div>
       <div><strong>Businesses</strong><a href="/business/">Claim your listing</a><a href="/add/">Add your business</a><a href="/account/">Owner sign in</a></div>
       <div><strong>woolmer</strong><a href="/guidelines/">Review guidelines</a><a href="/terms/">Terms</a><a href="/privacy/">Privacy</a><a href="mailto:info@woolmer.info">info@woolmer.info</a></div>
     </div>
@@ -440,6 +441,47 @@ ${groups.map(([c, l]) => `<section class="sec" style="padding-bottom:0"><div cla
   {
     const byName = n => places.find(p => p.name === n);
     const L = (n, label) => { const p = byName(n); return p ? `<a href="/p/${p.slug}/">${esc(label || n)}</a>` : esc(label || n); };
+  // local sport
+  {
+    const clubs = (data.sport || []).slice().sort((a, b) => (a.sort ?? 100) - (b.sort ?? 100));
+    const sports = [...new Set(clubs.map(c => c.sport))];
+    const ftLink = (code, label) => code ? `<div class="ft-embed" data-ft="${esc(code)}"><div id="lrep${esc(code)}">Loading ${esc(label.toLowerCase())}…</div></div>` : '';
+    const card = c => {
+      const pl = c.place_id && byId[c.place_id];
+      const hasFt = c.ft_results || c.ft_fixtures || c.ft_table;
+      const tabs = [['results', 'Results', c.ft_results], ['fixtures', 'Fixtures', c.ft_fixtures], ['table', 'Table', c.ft_table]].filter(t => t[2]);
+      return `<article class="sp-club" data-sport="${esc(c.sport)}">
+  <div class="sp-head"><span class="sp-badge sp-${slugify(c.sport)}">${esc(c.sport)}</span><span class="muted">${esc(c.area || '')}</span></div>
+  <h2>${pl ? `<a href="/p/${pl.slug}/">${esc(c.name)}</a>` : esc(c.name)}</h2>
+  ${c.league ? `<p class="sp-league">${esc(c.league)}</p>` : ''}
+  ${c.blurb ? `<p class="muted">${esc(c.blurb)}</p>` : ''}
+  ${hasFt ? `<div class="sp-tabs" role="tablist">${tabs.map((t, i) => `<button type="button" class="chip chip-l${i ? '' : ' on'}" data-tab="${t[0]}">${t[1]}</button>`).join('')}</div>${tabs.map((t, i) => `<div class="sp-pane" data-pane="${t[0]}"${i ? ' hidden' : ''}>${ftLink(t[2], t[1])}</div>`).join('')}<p class="sp-src">Live from <a href="https://fulltime.thefa.com" rel="noopener" target="_blank">FA Full-Time</a></p>`
+        : `<p class="sp-wait">${c.sport === 'Cricket' ? 'Cricket results will show here when the season starts in April.' : 'Live results coming soon.'} Run this club? <a href="mailto:info@woolmer.info?subject=${encodeURIComponent('Results for ' + c.name)}">Send us your results feed</a> and they'll show here automatically, free.</p>`}
+  <div class="sp-links">${c.results_url ? `<a class="btn btn-ghost btn-sm" href="${esc(c.results_url)}" rel="noopener" target="_blank">Fixtures &amp; results</a>` : ''}${c.website ? `<a class="btn btn-ghost btn-sm" href="${esc(c.website)}" rel="noopener" target="_blank">Club website</a>` : ''}</div>
+</article>`;
+    };
+    files['sport/index.html'] = page({
+      title: 'Local sport: results, fixtures and clubs in Whitehill & Bordon | woolmer',
+      desc: 'Latest results, fixtures and league tables for football and cricket clubs in Whitehill, Bordon, Headley, Liphook and Kingsley.',
+      path: '/sport/',
+      body: `<section class="ph dk"><div class="wrap"><nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a> / Sport</nav><h1>Local sport</h1><p>Results, fixtures and tables for the clubs on our doorstep, from Saturday's first team to Sunday's under-9s. Want to play? Every club here welcomes new members.</p></div></section>
+<section class="sec" style="padding-top:28px"><div class="wrap">
+  ${sports.length > 1 ? `<div class="chips sp-filter" role="group" aria-label="Sport"><button class="chip chip-l on" type="button" data-s="">All sports</button>${sports.map(s => `<button class="chip chip-l" type="button" data-s="${esc(s)}">${esc(s)}</button>`).join('')}</div>` : ''}
+  <div class="sp-grid">${clubs.map(card).join('')}</div>
+  <div class="panel sp-cta"><h2>Run a local club?</h2><p>Get your results, fixtures and league table on woolmer for free. For football, log in to FA Full-Time, go to <strong>Media &gt; Code snippets</strong>, and send us the codes for <strong>Club - Results</strong>, <strong>Club - Fixtures</strong> and your <strong>Table</strong>. They'll update here automatically every match day. Other sports: just email your results page.</p><a class="btn btn-navy" href="mailto:info@woolmer.info?subject=Club%20results%20on%20woolmer">Email info@woolmer.info</a></div>
+</div></section>
+<script>
+(function(){
+  document.querySelectorAll('.sp-filter [data-s]').forEach(function(b){b.onclick=function(){var s=b.dataset.s;document.querySelectorAll('.sp-filter [data-s]').forEach(function(x){x.classList.toggle('on',x===b);});document.querySelectorAll('.sp-club').forEach(function(c){c.hidden=!!s&&c.dataset.sport!==s;});};});
+  document.querySelectorAll('.sp-club').forEach(function(card){card.querySelectorAll('[data-tab]').forEach(function(b){b.onclick=function(){card.querySelectorAll('[data-tab]').forEach(function(x){x.classList.toggle('on',x===b);});card.querySelectorAll('[data-pane]').forEach(function(p){p.hidden=p.dataset.pane!==b.dataset.tab;});};});});
+  // FA Full-Time official embed: each snippet reads a global lrcode, so load them one at a time
+  var q=[].slice.call(document.querySelectorAll('[data-ft]'));
+  (function next(){var el=q.shift();if(!el)return;window.lrcode=el.dataset.ft;var s=document.createElement('script');s.src='https://fulltime.thefa.com/client/api/cs1.js';s.onload=s.onerror=function(){setTimeout(next,300);};document.body.appendChild(s);})();
+})();
+</script>`,
+    });
+    sitemap.push('/sport/');
+  }
     sitemap.push('/local/');
     files['local/index.html'] = page({
       title: 'Bins, the tip, buses and local info for Whitehill & Bordon — woolmer', desc: 'Bin collection days, the Bordon tip, bus routes, GP surgeries, pharmacies and council contacts for Whitehill, Bordon and nearby villages.', path: '/local/',
