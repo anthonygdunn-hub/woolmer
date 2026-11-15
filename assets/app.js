@@ -14,7 +14,8 @@
 
   // ---------------------------------------------------------------- cookie-free click counter (no cookies, no IDs, nothing stored on the phone)
   (function () {
-    if (!WB.url || /^(localhost|127\.)/.test(location.hostname) || /^\/(admin|account)/.test(location.pathname)) return;
+    var me = false; try { me = localStorage.getItem('wb_me') === '1'; } catch (e) {}
+    if (me || !WB.url || /^(localhost|127\.)/.test(location.hostname) || /^\/(admin|account)/.test(location.pathname)) return;
     var mob = /Mobi|Android|iPhone/i.test(navigator.userAgent);
     var hit = function (ev, label) {
       try {

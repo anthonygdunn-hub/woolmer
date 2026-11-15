@@ -92,10 +92,21 @@
     d.addEventListener('close', function () { d.remove(); });
   });
 
+  // the owner's own devices are never counted: woolmer.info/?me=on sets a flag in this browser, ?me=off clears it
+  try {
+    var meq = new URLSearchParams(location.search).get('me');
+    if (meq === 'on' || meq === 'off') {
+      if (meq === 'on') localStorage.setItem('wb_me', '1'); else localStorage.removeItem('wb_me');
+      var tn = document.createElement('div'); tn.className = 'me-toast'; tn.textContent = meq === 'on' ? 'This device is no longer counted in woolmer stats' : 'This device is counted again';
+      document.body.appendChild(tn); setTimeout(function () { tn.remove(); }, 4000);
+      history.replaceState(null, '', location.pathname);
+    }
+  } catch (e) {}
+  WB.isMe = function () { try { return localStorage.getItem('wb_me') === '1'; } catch (e) { return false; } };
   // cookie-free page count: path + referring site only, nothing about the visitor
   try {
     var pth = location.pathname;
-    if (!/bot|crawl|spider|headless/i.test(navigator.userAgent) && navigator.doNotTrack !== '1' && !/^\/(admin|account|claim)\//.test(pth) && location.hostname === 'woolmer.info') {
+    if (!WB.isMe() && !/bot|crawl|spider|headless/i.test(navigator.userAgent) && navigator.doNotTrack !== '1' && !/^\/(admin|account|claim)\//.test(pth) && location.hostname === 'woolmer.info') {
       var rh = ''; try { rh = document.referrer ? new URL(document.referrer).hostname : ''; } catch (e) {}
       WB.rest('rpc/wb_hit', { method: 'POST', body: { p_path: pth, p_ref: rh } }).catch(function () {});
     }
