@@ -35,7 +35,11 @@
   function local(e) { return miles(e) <= LOCAL_MI; }
   var now = new Date(), today = day(now), tomorrow = day(new Date(now.getTime() + 864e5));
 
+  function running(e) { return day(e.starts_at) < today && end(e) > now; }
+  function sday(e) { return running(e) ? today : day(e.starts_at); }
+  function until(e) { return 'On until ' + f(end(e), { weekday: 'short', day: 'numeric', month: 'short' }); }
   function flag(e) {
+    if (running(e) && day(end(e)) !== today) return '';
     var s = new Date(e.starts_at);
     if (s <= now && end(e) > now) return 'On now';
     var d = day(s);
@@ -47,9 +51,9 @@
   function card(e) {
     var venue = e.place ? '<a href="/p/' + esc(e.place.slug) + '/">' + esc(e.place.name) + '</a>' : esc(e.venue || ''), fl = flag(e);
     var mi = miles(e), far = mi > LOCAL_MI ? '<span class="ev-far">' + Math.round(mi) + ' miles' + (e.town ? ' · ' + esc(e.town) : '') + '</span>' : '';
-    return '<article class="ev' + (fl === 'On now' ? ' ev-live' : '') + '" data-day="' + day(e.starts_at) + '" data-mi="' + Math.round(mi) + '" data-tags="' + tagList(e).join(' ') + '" data-start="' + esc(e.starts_at) + '">' +
-      '<div class="ev-date"><span>' + f(e.starts_at, { weekday: 'short' }) + '</span><b>' + f(e.starts_at, { day: 'numeric' }) + '</b><span>' + f(e.starts_at, { month: 'short' }) + '</span></div>' +
-      '<div class="ev-body"><p class="ev-when">' + (fl ? '<span class="ev-flag">' + fl + '</span>' : '') + far + when(e) + (e.kind ? ' · ' + esc(e.kind) : '') + '</p>' +
+    return '<article class="ev' + (fl === 'On now' ? ' ev-live' : '') + '" data-day="' + sday(e) + '" data-mi="' + Math.round(mi) + '" data-tags="' + tagList(e).join(' ') + '" data-start="' + esc(e.starts_at) + '">' +
+      '<div class="ev-date"><span>' + f(sday(e) + 'T12:00:00Z', { weekday: 'short' }) + '</span><b>' + f(sday(e) + 'T12:00:00Z', { day: 'numeric' }) + '</b><span>' + f(sday(e) + 'T12:00:00Z', { month: 'short' }) + '</span></div>' +
+      '<div class="ev-body"><p class="ev-when">' + (fl ? '<span class="ev-flag">' + fl + '</span>' : '') + far + (running(e) ? until(e) : when(e)) + (e.kind ? ' · ' + esc(e.kind) : '') + '</p>' +
       '<h3><a href="' + path(e) + '">' + esc(e.title) + '</a></h3>' + tagsHtml(e) +
       (venue ? '<p class="ev-venue">' + venue + '</p>' : '') + (e.details ? '<p class="ev-det">' + esc(e.details) + '</p>' : '') + (e.price ? '<p class="ev-price">' + esc(e.price) + '</p>' : '') +
       '</div></article>';
@@ -58,7 +62,7 @@
   function load() {
     var cols = 'id,title,place_id,venue,starts_at,ends_at,details,price,url,kind,lat,lng,town,tags,wb_places(slug,name,lat,lng)';
     var since = new Date(Date.now() - 864e5).toISOString();
-    var live = WB.url ? fetch(WB.url + '/rest/v1/wb_events?select=' + cols + '&published=eq.true&starts_at=gte.' + encodeURIComponent(since) + '&order=starts_at&limit=1000', { headers: { apikey: WB.key, Authorization: 'Bearer ' + WB.key } })
+    var live = WB.url ? fetch(WB.url + '/rest/v1/wb_events?select=' + cols + '&published=eq.true&or=(starts_at.gte.' + encodeURIComponent(since) + ',ends_at.gte.' + encodeURIComponent(now.toISOString()) + ')' + '&order=starts_at&limit=1000', { headers: { apikey: WB.key, Authorization: 'Bearer ' + WB.key } })
       .then(function (r) { if (!r.ok) throw r; return r.json(); })
       .then(function (rows) { return rows.map(function (e) { e.place = e.wb_places || null; delete e.wb_places; return e; }); }) : Promise.reject();
     return live.catch(function () { return fetch('/events.json').then(function (r) { return r.ok ? r.json() : []; }); })
@@ -100,10 +104,11 @@
   function renderAll(evs) {
     if (!allList) return;
     var days = [];
-    evs.forEach(function (e) { var d = day(e.starts_at); if (days.indexOf(d) < 0) days.push(d); });
+    evs.sort(function (a, b) { return sday(a) < sday(b) ? -1 : sday(a) > sday(b) ? 1 : (a.starts_at < b.starts_at ? -1 : 1); });
+    evs.forEach(function (e) { var d = sday(e); if (days.indexOf(d) < 0) days.push(d); });
     allList.innerHTML = days.map(function (d) {
       return '<div class="wo-day" data-day="' + d + '"><h2 class="wo-h">' + f(d + 'T12:00:00Z', { weekday: 'long', day: 'numeric', month: 'long' }) + '</h2><div class="evs">' +
-        evs.filter(function (e) { return day(e.starts_at) === d; }).map(card).join('') + '</div></div>';
+        evs.filter(function (e) { return sday(e) === d; }).map(card).join('') + '</div></div>';
     }).join('');
     var none = document.getElementById('wo-none');
     var btns = document.querySelectorAll('.wo-filter [data-f]'), dbtns = document.querySelectorAll('.wo-dist [data-d]');

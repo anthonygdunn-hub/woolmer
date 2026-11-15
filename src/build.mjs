@@ -71,12 +71,15 @@ const evMiles = (e, pl) => { const la = e.lat ?? (pl && pl.lat), lo = e.lng ?? (
 const evSlug = e => `${slugify(e.title).slice(0, 60)}-${ukDay(e.starts_at)}-${String(e.id).slice(0, 4)}`;
 const evPath = e => `/whats-on/${evSlug(e)}/`;
 
+const BUILD_DAY = ukDay(new Date());
+const evRunning = e => ukDay(e.starts_at) < BUILD_DAY && evEnd(e) > new Date();
+const evShowDay = e => evRunning(e) ? BUILD_DAY : ukDay(e.starts_at);
 function evCard(e, bySlug) {
   const pl = e.place_id && bySlug[e.place_id];
   const venue = pl ? `<a href="/p/${pl.slug}/">${esc(pl.name)}</a>` : esc(e.venue || '');
-  return `<article class="ev" data-start="${esc(e.starts_at)}" data-end="${esc(evEnd(e).toISOString())}" data-day="${ukDay(e.starts_at)}">
-  <div class="ev-date"><span>${fmt(e.starts_at, { weekday: 'short' })}</span><b>${fmt(e.starts_at, { day: 'numeric' })}</b><span>${fmt(e.starts_at, { month: 'short' })}</span></div>
-  <div class="ev-body"><p class="ev-when"><span class="ev-flag" hidden></span>${evTime(e)}${e.kind ? ` · ${esc(e.kind)}` : ''}</p><h3><a href="${evPath(e)}">${esc(e.title)}</a></h3>${evTagsHtml(e)}${venue ? `<p class="ev-venue">${venue}</p>` : ''}${e.details ? `<p class="ev-det">${esc(e.details)}</p>` : ''}${e.price ? `<p class="ev-price">${esc(e.price)}</p>` : ''}</div>
+  return `<article class="ev" data-start="${esc(e.starts_at)}" data-end="${esc(evEnd(e).toISOString())}" data-day="${evShowDay(e)}">
+  <div class="ev-date"><span>${fmt(evShowDay(e) + 'T12:00:00Z', { weekday: 'short' })}</span><b>${fmt(evShowDay(e) + 'T12:00:00Z', { day: 'numeric' })}</b><span>${fmt(evShowDay(e) + 'T12:00:00Z', { month: 'short' })}</span></div>
+  <div class="ev-body"><p class="ev-when"><span class="ev-flag" hidden></span>${evRunning(e) ? 'On until ' + fmt(evEnd(e), { weekday: 'short', day: 'numeric', month: 'short' }) : evTime(e)}${e.kind ? ` · ${esc(e.kind)}` : ''}</p><h3><a href="${evPath(e)}">${esc(e.title)}</a></h3>${evTagsHtml(e)}${venue ? `<p class="ev-venue">${venue}</p>` : ''}${e.details ? `<p class="ev-det">${esc(e.details)}</p>` : ''}${e.price ? `<p class="ev-price">${esc(e.price)}</p>` : ''}</div>
 </article>`;
 }
 
@@ -377,7 +380,7 @@ ${signupBlock}`,
     const mi = e => evMiles(e, e.place_id && byId[e.place_id]);
     const itemList = (name, evs) => ({ '@context': 'https://schema.org', '@type': 'ItemList', name, itemListElement: evs.slice(0, 30).map((e, i) => ({ '@type': 'ListItem', position: i + 1, url: SITE + evPath(e), name: e.title })) });
     const dayGroups = evs => {
-      const g = {}; evs.forEach(e => { (g[ukDay(e.starts_at)] = g[ukDay(e.starts_at)] || []).push(e); });
+      const g = {}; evs.forEach(e => { (g[evShowDay(e)] = g[evShowDay(e)] || []).push(e); });
       return Object.keys(g).sort().map(d => `<h2 class="wo-h">${fmt(d + 'T12:00:00Z', { weekday: 'long', day: 'numeric', month: 'long' })}</h2><div class="evs">${g[d].map(e => evCard(e, byId)).join('')}</div>`).join('');
     };
     const LP = [
@@ -573,7 +576,7 @@ ${groups.map(([c, l]) => `<section class="sec" style="padding-bottom:0"><div cla
   }
 
   // what's on
-  const days = [...new Set(upcoming.map(e => ukDay(e.starts_at)))];
+  const days = [...new Set(upcoming.map(evShowDay))].sort();
   files['whats-on/index.html'] = page({
     title: "What's on in Whitehill & Bordon — woolmer", desc: 'Live music, quizzes, markets, shows and family days in Whitehill & Bordon and within 30 miles, up to six months ahead.', path: '/whats-on/',
     jsonld: upcoming.length ? upcoming.slice(0, 30).map(e => { const pl = e.place_id && byId[e.place_id]; return { '@context': 'https://schema.org', '@type': 'Event', name: e.title, startDate: e.starts_at, endDate: evEnd(e).toISOString(), eventStatus: 'https://schema.org/EventScheduled', eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode', description: e.details || undefined, location: { '@type': 'Place', name: pl ? pl.name : (e.venue || 'Whitehill & Bordon'), address: pl ? [pl.address_clean, pl.postcode].filter(Boolean).join(', ') || 'Whitehill & Bordon' : 'Whitehill & Bordon, Hampshire' } }; }) : null,
@@ -582,7 +585,7 @@ ${groups.map(([c, l]) => `<section class="sec" style="padding-bottom:0"><div cla
   <div class="chips wo-filter" role="group" aria-label="Show"><button class="chip chip-l on" data-f="all" type="button">Everything</button><button class="chip chip-l" data-f="today" type="button">Today</button><button class="chip chip-l" data-f="weekend" type="button">This weekend</button><button class="chip chip-l" data-f="week" type="button">Next 7 days</button></div>
   <div class="chips wo-dist" role="group" aria-label="How far"><span class="wo-dist-l">How far</span>${[5, 10, 15, 20, 25, 30].map(n => `<button class="chip chip-l${n === 30 ? ' on' : ''}" data-d="${n}" type="button">${n} miles</button>`).join('')}</div>
   <div class="chips wo-dist wo-only" role="group" aria-label="Only show"><span class="wo-dist-l">Only show</span><button class="chip chip-l" data-t="free" type="button">Free</button><button class="chip chip-l" data-t="kids" type="button">Good for kids</button></div>
-  <div id="wo-all">${days.length ? days.map(d => `<div class="wo-day" data-day="${d}"><h2 class="wo-h">${fmt(d + 'T12:00:00Z', { weekday: 'long', day: 'numeric', month: 'long' })}</h2><div class="evs">${upcoming.filter(e => ukDay(e.starts_at) === d).map(e => evCard(e, byId)).join('')}</div></div>`).join('') : ''}</div>
+  <div id="wo-all">${days.length ? days.map(d => `<div class="wo-day" data-day="${d}"><h2 class="wo-h">${fmt(d + 'T12:00:00Z', { weekday: 'long', day: 'numeric', month: 'long' })}</h2><div class="evs">${upcoming.filter(e => evShowDay(e) === d).map(e => evCard(e, byId)).join('')}</div></div>`).join('') : ''}</div>
   <p class="muted" id="wo-none"${days.length ? ' hidden' : ''}>Nothing listed yet. Running something? Email <a href="mailto:info@woolmer.info">info@woolmer.info</a> and we'll add it free.</p>
 </div></section>`,
   });
