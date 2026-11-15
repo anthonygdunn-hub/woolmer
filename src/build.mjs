@@ -52,7 +52,8 @@ const isFeatured = () => false; // woolmer is free for every business: no paid p
 const TZ = 'Europe/London';
 const fmt = (d, o) => new Intl.DateTimeFormat('en-GB', { timeZone: TZ, ...o }).format(new Date(d));
 const ukDay = d => fmt(d, { year: 'numeric', month: '2-digit', day: '2-digit' }).split('/').reverse().join('-');
-const evTime = e => fmt(e.starts_at, { hour: 'numeric', minute: '2-digit', hour12: true }).replace(':00', '').replace(' ', '') + (e.ends_at ? '–' + fmt(e.ends_at, { hour: 'numeric', minute: '2-digit', hour12: true }).replace(':00', '').replace(' ', '') : '');
+const evDateOnly = e => fmt(e.starts_at, { hour: '2-digit', minute: '2-digit', hour12: false }) === '00:00';
+const evTime = e => evDateOnly(e) ? 'Times vary' : fmt(e.starts_at, { hour: 'numeric', minute: '2-digit', hour12: true }).replace(':00', '').replace(' ', '') + (e.ends_at ? '–' + fmt(e.ends_at, { hour: 'numeric', minute: '2-digit', hour12: true }).replace(':00', '').replace(' ', '') : '');
 const evEnd = e => new Date(e.ends_at || new Date(e.starts_at).getTime() + 3 * 36e5);
 
 // ---- event tags, distance and pages
@@ -594,9 +595,9 @@ ${groups.map(([c, l]) => `<section class="sec" style="padding-bottom:0"><div cla
     const st = new Date(e.starts_at), en = evEnd(e);
     const ics = d => d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
     const icsEsc = x => String(x).replace(/\\/g, '\\\\').replace(/[,;]/g, m => '\\' + m).replace(/\n/g, '\\n');
-    files[`whats-on/${evSlug(e)}/event.ics`] = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//woolmer//EN', 'BEGIN:VEVENT', `UID:${e.id}@woolmer.info`, `DTSTAMP:${ics(new Date())}`, `DTSTART:${ics(st)}`, `DTEND:${ics(en)}`, `SUMMARY:${icsEsc(e.title)}`, `LOCATION:${icsEsc([where, e.town].filter(Boolean).join(', '))}`, `DESCRIPTION:${icsEsc((e.details || '') + ' ' + SITE + evPath(e))}`, 'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
+    files[`whats-on/${evSlug(e)}/event.ics`] = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//woolmer//EN', 'BEGIN:VEVENT', `UID:${e.id}@woolmer.info`, `DTSTAMP:${ics(new Date())}`, ...(evDateOnly(e) ? [`DTSTART;VALUE=DATE:${ukDay(e.starts_at).replace(/-/g, '')}`, `DTEND;VALUE=DATE:${ukDay(new Date(new Date(e.ends_at || e.starts_at).getTime() + 864e5).toISOString()).replace(/-/g, '')}`] : [`DTSTART:${ics(st)}`, `DTEND:${ics(en)}`]), `SUMMARY:${icsEsc(e.title)}`, `LOCATION:${icsEsc([where, e.town].filter(Boolean).join(', '))}`, `DESCRIPTION:${icsEsc((e.details || '') + ' ' + SITE + evPath(e))}`, 'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
     const more = upcoming.filter(x => x.id !== e.id && evMiles(x, x.place_id && byId[x.place_id]) <= Math.max(5, mi + 5)).slice(0, 4);
-    const dateLine = fmt(e.starts_at, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) + ', ' + evTime(e) + (e.ends_at && ukDay(e.ends_at) !== ukDay(e.starts_at) ? ` until ${fmt(e.ends_at, { weekday: 'short', day: 'numeric', month: 'short' })}` : '');
+    const dateLine = fmt(e.starts_at, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) + ', ' + (evDateOnly(e) ? 'times vary' : evTime(e)) + (e.ends_at && ukDay(e.ends_at) !== ukDay(e.starts_at) ? ` until ${fmt(e.ends_at, { weekday: 'short', day: 'numeric', month: 'short' })}` : '');
     const tl = evTagList(e);
     files[`whats-on/${evSlug(e)}/index.html`] = page({
       title: `${e.title}, ${fmt(e.starts_at, { day: 'numeric', month: 'short' })} — What's on near Bordon | woolmer`,

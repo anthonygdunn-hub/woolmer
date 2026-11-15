@@ -12,7 +12,7 @@
   function day(d) { return f(d, { year: 'numeric', month: '2-digit', day: '2-digit' }).split('/').reverse().join('-'); }
   function hm(d) { return f(d, { hour: 'numeric', minute: '2-digit', hour12: true }).replace(':00', '').replace(' ', ''); }
   function end(e) { return e.ends_at ? new Date(e.ends_at) : new Date(new Date(e.starts_at).getTime() + 3 * 36e5); }
-  function when(e) { return hm(e.starts_at) + (e.ends_at ? '–' + hm(e.ends_at) : ''); }
+  function when(e) { if (f(e.starts_at, { hour: '2-digit', minute: '2-digit', hour12: false }) === '00:00') return 'Times vary'; return hm(e.starts_at) + (e.ends_at ? '–' + hm(e.ends_at) : ''); }
   var HOME = [51.1125, -0.862], LOCAL_MI = 5;
   function miles(e) {
     var la = e.lat != null ? e.lat : e.place && e.place.lat, lo = e.lng != null ? e.lng : e.place && e.place.lng;
