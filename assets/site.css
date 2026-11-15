@@ -455,3 +455,9 @@ a.deal:hover{transform:translateY(-4px) rotate(-.4deg);box-shadow:0 18px 32px -2
 .dw-tile-art span{display:block;height:12px;border-radius:4px;background:var(--orange)}
 .dw-tile-art span:nth-child(2){width:70%;background:var(--ln)}.dw-tile-art span:nth-child(3){flex:1;background:linear-gradient(135deg,var(--soft),var(--fountain))}
 @media (max-width:760px){.dw-tile{grid-template-columns:1fr;padding:24px}.dw-tile-art{display:none}.dw-tile-cta{flex-direction:row;flex-wrap:wrap}}
+
+/* event distance */
+.wo-dist{margin-top:10px;align-items:center}
+.wo-dist-l{font-size:13px;font-weight:600;color:var(--mu);margin-right:4px}
+.ev-far{font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:#FFF1EC;color:#C2410C}
+.ev[hidden],.wo-day[hidden]{display:none}

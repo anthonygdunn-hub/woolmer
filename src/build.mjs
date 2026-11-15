@@ -36,7 +36,7 @@ async function load() {
     sb(`wb_places?select=${cols}&listable=eq.true&order=name`),
     sb('wb_place_stats?select=id,reviews,rating'),
     sb('wb_settings?select=key,value'),
-    sb(`wb_events?select=id,title,place_id,venue,starts_at,ends_at,details,price,url,kind&published=eq.true&starts_at=gte.${since}&order=starts_at&limit=300`).catch(() => []),
+    sb(`wb_events?select=id,title,place_id,venue,starts_at,ends_at,details,price,url,kind,lat,lng,town&published=eq.true&starts_at=gte.${since}&order=starts_at&limit=1000`).catch(() => []),
   ]);
   return { places, stats, settings: Object.fromEntries(settings.map(s => [s.key, s.value])), events };
 }
@@ -455,16 +455,17 @@ ${groups.map(([c, l]) => `<section class="sec" style="padding-bottom:0"><div cla
   // what's on
   const days = [...new Set(upcoming.map(e => ukDay(e.starts_at)))];
   files['whats-on/index.html'] = page({
-    title: "What's on in Whitehill & Bordon — woolmer", desc: 'Live music, quizzes, markets, sport and family events in Whitehill, Bordon, Lindford and Headley Down.', path: '/whats-on/',
+    title: "What's on in Whitehill & Bordon — woolmer", desc: 'Live music, quizzes, markets, shows and family days in Whitehill & Bordon and within 30 miles, up to six months ahead.', path: '/whats-on/',
     jsonld: upcoming.length ? upcoming.slice(0, 30).map(e => { const pl = e.place_id && byId[e.place_id]; return { '@context': 'https://schema.org', '@type': 'Event', name: e.title, startDate: e.starts_at, endDate: evEnd(e).toISOString(), eventStatus: 'https://schema.org/EventScheduled', eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode', description: e.details || undefined, location: { '@type': 'Place', name: pl ? pl.name : (e.venue || 'Whitehill & Bordon'), address: pl ? [pl.address_clean, pl.postcode].filter(Boolean).join(', ') || 'Whitehill & Bordon' : 'Whitehill & Bordon, Hampshire' } }; }) : null,
-    body: `<section class="ph dk"><div class="wrap"><nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a> / What's on</nav><h1>What's on</h1><p>Live music, quizzes, markets, sport and family days around Whitehill &amp; Bordon.</p></div></section>
+    body: `<section class="ph dk"><div class="wrap"><nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a> / What's on</nav><h1>What's on</h1><p>Everything on in Whitehill &amp; Bordon, plus the best days out within 30 miles, up to six months ahead. Most of us will happily drive half an hour for a good show, market or family day, so we list those too. Use the distance buttons to keep it close to home.</p></div></section>
 <section class="sec" style="padding-top:28px"><div class="wrap">
   <div class="chips wo-filter" role="group" aria-label="Show"><button class="chip chip-l on" data-f="all" type="button">Everything</button><button class="chip chip-l" data-f="today" type="button">Today</button><button class="chip chip-l" data-f="weekend" type="button">This weekend</button><button class="chip chip-l" data-f="week" type="button">Next 7 days</button></div>
+  <div class="chips wo-dist" role="group" aria-label="How far"><span class="wo-dist-l">How far</span><button class="chip chip-l" data-d="6" type="button">Bordon area</button><button class="chip chip-l" data-d="15" type="button">Up to 15 miles</button><button class="chip chip-l on" data-d="30" type="button">Up to 30 miles</button></div>
   <div id="wo-all">${days.length ? days.map(d => `<div class="wo-day" data-day="${d}"><h2 class="wo-h">${fmt(d + 'T12:00:00Z', { weekday: 'long', day: 'numeric', month: 'long' })}</h2><div class="evs">${upcoming.filter(e => ukDay(e.starts_at) === d).map(e => evCard(e, byId)).join('')}</div></div>`).join('') : ''}</div>
   <p class="muted" id="wo-none"${days.length ? ' hidden' : ''}>Nothing listed yet. Running something? Email <a href="mailto:info@woolmer.info">info@woolmer.info</a> and we'll add it free.</p>
 </div></section>`,
   });
-  files['events.json'] = JSON.stringify(upcoming.map(e => { const pl = e.place_id && byId[e.place_id]; return { ...e, place: pl ? { slug: pl.slug, name: pl.name } : null }; }));
+  files['events.json'] = JSON.stringify(upcoming.map(e => { const pl = e.place_id && byId[e.place_id]; return { ...e, place: pl ? { slug: pl.slug, name: pl.name, lat: pl.lat, lng: pl.lng } : null }; }));
 
   // search
   files['search/index.html'] = page({

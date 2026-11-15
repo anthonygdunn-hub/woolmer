@@ -13,6 +13,15 @@
   function hm(d) { return f(d, { hour: 'numeric', minute: '2-digit', hour12: true }).replace(':00', '').replace(' ', ''); }
   function end(e) { return e.ends_at ? new Date(e.ends_at) : new Date(new Date(e.starts_at).getTime() + 3 * 36e5); }
   function when(e) { return hm(e.starts_at) + (e.ends_at ? '–' + hm(e.ends_at) : ''); }
+  var HOME = [51.1125, -0.862], LOCAL_MI = 6;
+  function miles(e) {
+    var la = e.lat != null ? e.lat : e.place && e.place.lat, lo = e.lng != null ? e.lng : e.place && e.place.lng;
+    if (la == null || lo == null) return 0;
+    var r = Math.PI / 180, dLa = (la - HOME[0]) * r, dLo = (lo - HOME[1]) * r;
+    var a = Math.sin(dLa / 2) * Math.sin(dLa / 2) + Math.cos(HOME[0] * r) * Math.cos(la * r) * Math.sin(dLo / 2) * Math.sin(dLo / 2);
+    return 3958.8 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  }
+  function local(e) { return miles(e) <= LOCAL_MI; }
   var now = new Date(), today = day(now), tomorrow = day(new Date(now.getTime() + 864e5));
 
   function flag(e) {
@@ -26,18 +35,19 @@
 
   function card(e) {
     var venue = e.place ? '<a href="/p/' + esc(e.place.slug) + '/">' + esc(e.place.name) + '</a>' : esc(e.venue || ''), fl = flag(e);
-    return '<article class="ev' + (fl === 'On now' ? ' ev-live' : '') + '" data-day="' + day(e.starts_at) + '" data-start="' + esc(e.starts_at) + '">' +
+    var mi = miles(e), far = mi > LOCAL_MI ? '<span class="ev-far">' + Math.round(mi) + ' miles' + (e.town ? ' · ' + esc(e.town) : '') + '</span>' : '';
+    return '<article class="ev' + (fl === 'On now' ? ' ev-live' : '') + '" data-day="' + day(e.starts_at) + '" data-mi="' + Math.round(mi) + '" data-start="' + esc(e.starts_at) + '">' +
       '<div class="ev-date"><span>' + f(e.starts_at, { weekday: 'short' }) + '</span><b>' + f(e.starts_at, { day: 'numeric' }) + '</b><span>' + f(e.starts_at, { month: 'short' }) + '</span></div>' +
-      '<div class="ev-body"><p class="ev-when">' + (fl ? '<span class="ev-flag">' + fl + '</span>' : '') + when(e) + (e.kind ? ' · ' + esc(e.kind) : '') + '</p>' +
+      '<div class="ev-body"><p class="ev-when">' + (fl ? '<span class="ev-flag">' + fl + '</span>' : '') + far + when(e) + (e.kind ? ' · ' + esc(e.kind) : '') + '</p>' +
       '<h3>' + (e.url ? '<a href="' + esc(e.url) + '" rel="nofollow noopener" target="_blank">' + esc(e.title) + '</a>' : esc(e.title)) + '</h3>' +
       (venue ? '<p class="ev-venue">' + venue + '</p>' : '') + (e.details ? '<p class="ev-det">' + esc(e.details) + '</p>' : '') + (e.price ? '<p class="ev-price">' + esc(e.price) + '</p>' : '') +
       '</div></article>';
   }
 
   function load() {
-    var cols = 'id,title,place_id,venue,starts_at,ends_at,details,price,url,kind,wb_places(slug,name)';
+    var cols = 'id,title,place_id,venue,starts_at,ends_at,details,price,url,kind,lat,lng,town,wb_places(slug,name,lat,lng)';
     var since = new Date(Date.now() - 864e5).toISOString();
-    var live = WB.url ? fetch(WB.url + '/rest/v1/wb_events?select=' + cols + '&published=eq.true&starts_at=gte.' + encodeURIComponent(since) + '&order=starts_at&limit=300', { headers: { apikey: WB.key, Authorization: 'Bearer ' + WB.key } })
+    var live = WB.url ? fetch(WB.url + '/rest/v1/wb_events?select=' + cols + '&published=eq.true&starts_at=gte.' + encodeURIComponent(since) + '&order=starts_at&limit=1000', { headers: { apikey: WB.key, Authorization: 'Bearer ' + WB.key } })
       .then(function (r) { if (!r.ok) throw r; return r.json(); })
       .then(function (rows) { return rows.map(function (e) { e.place = e.wb_places || null; delete e.wb_places; return e; }); }) : Promise.reject();
     return live.catch(function () { return fetch('/events.json').then(function (r) { return r.ok ? r.json() : []; }); })
@@ -85,23 +95,30 @@
         evs.filter(function (e) { return day(e.starts_at) === d; }).map(card).join('') + '</div></div>';
     }).join('');
     var none = document.getElementById('wo-none');
-    var btns = document.querySelectorAll('.wo-filter [data-f]');
+    var btns = document.querySelectorAll('.wo-filter [data-f]'), dbtns = document.querySelectorAll('.wo-dist [data-d]');
+    var cur = 'all', dist = 30;
+    try { var sd = +localStorage.getItem('wb_ev_dist'); if ([6, 15, 30].indexOf(sd) >= 0) dist = sd; } catch (x) {}
     var apply = function (k) {
+      k = k || cur; cur = k;
       var wd = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].indexOf(f(now, { weekday: 'short' }));
       var fri = day(new Date(now.getTime() + Math.max(0, 4 - wd) * 864e5)), sun = day(new Date(now.getTime() + (6 - wd) * 864e5));
       var wk = day(new Date(now.getTime() + 6 * 864e5)), shown = 0;
       allList.querySelectorAll('.wo-day').forEach(function (el) {
         var d = el.dataset.day, ok = k === 'all' || (k === 'today' && d === today) || (k === 'week' && d <= wk) || (k === 'weekend' && d >= fri && d <= sun);
-        el.hidden = !ok; if (ok) shown++;
+        var any = 0;
+        el.querySelectorAll('.ev').forEach(function (c) { var v = ok && +c.dataset.mi <= dist; c.hidden = !v; if (v) any++; });
+        el.hidden = !any; if (any) shown++;
       });
       none.hidden = !!shown;
-      none.innerHTML = evs.length ? 'Nothing on for those dates yet.' : 'Nothing listed yet. Running something? Email <a href="mailto:info@woolmer.info">info@woolmer.info</a> and we\'ll add it free.';
+      none.innerHTML = evs.length ? (dist < 30 ? 'Nothing that close for those dates. Try a wider distance.' : 'Nothing on for those dates yet.') : 'Nothing listed yet. Running something? Email <a href="mailto:info@woolmer.info">info@woolmer.info</a> and we\'ll add it free.';
       btns.forEach(function (b) { b.classList.toggle('on', b.dataset.f === k); b.setAttribute('aria-pressed', b.dataset.f === k); });
+      dbtns.forEach(function (b) { b.classList.toggle('on', +b.dataset.d === dist); b.setAttribute('aria-pressed', +b.dataset.d === dist); });
     };
     btns.forEach(function (b) { b.onclick = function () { apply(b.dataset.f); }; });
+    dbtns.forEach(function (b) { b.onclick = function () { dist = +b.dataset.d; try { localStorage.setItem('wb_ev_dist', dist); } catch (x) {} apply(); }; });
     apply('all');
   }
 
-  function go() { var P = load(); window.WB = window.WB || {}; WB.eventsP = P; P.then(function (evs) { renderStrip(evs); renderHome(evs); renderAll(evs); }); }
+  function go() { var P = load(); window.WB = window.WB || {}; WB.eventsP = P; P.then(function (evs) { var near = evs.filter(local); renderStrip(near); renderHome(near); renderAll(evs); }); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go); else go();
 })();
