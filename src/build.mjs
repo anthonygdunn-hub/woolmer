@@ -152,7 +152,7 @@ const TAB_ICONS = {
   heart: ic('<path d="M12 20s-7.5-4.6-7.5-10A4.3 4.3 0 0 1 12 7.3 4.3 4.3 0 0 1 19.5 10c0 5.4-7.5 10-7.5 10z"/>'),
   user: ic('<circle cx="12" cy="8.5" r="3.5"/><path d="M5 20c1.2-3.6 4-5.5 7-5.5s5.8 1.9 7 5.5"/>'),
 };
-const NAV = [['Takeaways', '/takeaways/'], ['Pubs & bars', '/pubs-and-bars/'], ['Cafés', '/cafes-and-restaurants/'], ['Shops', '/shops/'], ["What's on", '/whats-on/'], ['Sport', '/sport/'], ['Ask the town', '/ask/'], ['For businesses', '/business/']];
+const NAV = [['Takeaways', '/takeaways/'], ['Pubs & bars', '/pubs-and-bars/'], ['Cafés', '/cafes-and-restaurants/'], ['Shops', '/shops/'], ["What's on", '/whats-on/'], ['Sport', '/sport/'], ['Ask the town', '/ask/']];
 const DW_TILE = `<section class="dw-tile-wrap"><div class="wrap"><div class="dw-tile">
   <div class="dw-tile-art" aria-hidden="true"><span></span><span></span><span></span></div>
   <div class="dw-tile-txt"><p class="eyebrow">For local businesses</p><h2>See your new website before you pay a penny</h2><p>Every local business on woolmer has a free mock-up website waiting. Find yours and tap <b>See your mock-up site</b>. Dunnworks, the Bordon studio that built woolmer, can make it real from £750, with no monthly fees.</p></div>
@@ -161,6 +161,14 @@ const DW_TILE = `<section class="dw-tile-wrap"><div class="wrap"><div class="dw-
 
 function page({ title, desc, path: p, body, head = '', scripts = '', noindex = false, jsonld = null }) {
   const url = SITE + p;
+  const graph = [].concat(jsonld || []);
+  const cm = !noindex && /<nav class="crumbs"[^>]*>([\s\S]*?)<\/nav>/.exec(body);
+  if (cm) {
+    const parts = cm[1].split(/\s*\/\s*(?=<a |[^<\/]*$)/).map(x => x.trim()).filter(Boolean);
+    const items = parts.map((x, i) => { const m = /<a href="([^"]+)">([\s\S]*?)<\/a>/.exec(x); const nm = (m ? m[2] : x).replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/&#39;/g, "'").trim(); return { '@type': 'ListItem', position: i + 1, name: nm, item: m ? SITE + m[1] : url }; }).filter(x => x.name);
+    if (items.length > 1) graph.push({ '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: items });
+  }
+  jsonld = graph.length ? (graph.length === 1 ? graph[0] : graph) : null;
   return `<!doctype html>
 <html lang="en-GB">
 <head>
@@ -174,6 +182,9 @@ ${noindex ? '<meta name="robots" content="noindex">' : ''}
 <meta property="og:description" content="${esc(desc)}">
 <meta property="og:url" content="${url}">
 <meta property="og:type" content="website">
+<meta property="og:site_name" content="woolmer">
+<meta property="og:locale" content="en_GB">
+<meta name="twitter:card" content="summary_large_image">
 <meta property="og:image" content="${SITE}/assets/og.png">
 <meta name="theme-color" content="#0C243C">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
@@ -216,7 +227,7 @@ ${p.startsWith('/p/') || p.startsWith('/admin') || p.startsWith('/account') ? ''
       <p style="margin:12px 0 0">An independent guide to Whitehill &amp; Bordon, built by people who live here. Named after the <a href="/#why-woolmer">Royal Forest of Woolmer</a>.</p>
     </div>
     <div class="cols">
-      <div><strong>Explore</strong>${CATS.slice(0, 5).map(c => `<a href="/${c.slug}/">${esc(c.name)}</a>`).join('')}<a href="/whats-on/">What's on</a><a href="/sport/">Local sport</a><a href="/local/">Bins, tip &amp; local info</a><a href="/search/">Search</a></div>
+      <div><strong>Explore</strong>${CATS.slice(0, 5).map(c => `<a href="/${c.slug}/">${esc(c.name)}</a>`).join('')}<a href="/whats-on/">What's on</a><a href="/this-weekend/">This weekend</a><a href="/kids/">Things to do with kids</a><a href="/christmas/">Christmas events</a><a href="/free-things-to-do/">Free things to do</a><a href="/sport/">Local sport</a><a href="/local/">Bins, tip &amp; local info</a><a href="/search/">Search</a></div>
       <div><strong>Businesses</strong><a href="/business/">Claim your listing</a><a href="/add/">Add your business</a><a href="/account/">Owner sign in</a></div>
       <div><strong>woolmer</strong><a href="/guidelines/">Review guidelines</a><a href="/terms/">Terms</a><a href="/privacy/">Privacy</a><a href="mailto:info@woolmer.info">info@woolmer.info</a></div>
     </div>
@@ -295,10 +306,10 @@ function build(data) {
   const featured = places.filter(isFeatured);
   const showcase = (featured.length ? featured : places.filter(p => p.category === 'Takeaways')).sort(sortPlaces);
   files['index.html'] = page({
-    title: 'woolmer — the Whitehill & Bordon guide',
-    desc: `Every takeaway, pub, café and shop in Whitehill & Bordon in one place: ${places.length} local businesses with food hygiene ratings, opening hours${REV ? ', menus and local reviews' : ' and menus'}.`,
+    title: 'woolmer: the free guide to Whitehill & Bordon',
+    desc: `Every takeaway, pub, café and shop in Whitehill & Bordon, plus what's on, bin days and local sport: ${places.length} businesses with hygiene ratings and opening hours.`,
     path: '/',
-    jsonld: { '@context': 'https://schema.org', '@type': 'WebSite', name: 'woolmer', url: SITE + '/', potentialAction: { '@type': 'SearchAction', target: SITE + '/search/?q={q}', 'query-input': 'required name=q' } },
+    jsonld: [{ '@context': 'https://schema.org', '@type': 'Organization', name: 'woolmer', url: SITE + '/', logo: SITE + '/icons/icon-512.png', email: 'info@woolmer.info', areaServed: ['Whitehill', 'Bordon', 'Lindford', 'Headley', 'Headley Down', 'Kingsley', 'Passfield'], description: 'Free independent guide to Whitehill & Bordon, Hampshire' }, { '@context': 'https://schema.org', '@type': 'WebSite', name: 'woolmer', alternateName: 'woolmer, the Whitehill & Bordon guide', url: SITE + '/', potentialAction: { '@type': 'SearchAction', target: SITE + '/search/?q={q}', 'query-input': 'required name=q' } }],
     body: `<section class="hero hero-photo dk"><div class="hero-bg" aria-hidden="true"></div><div class="wrap">
   <p class="eyebrow">Whitehill · Bordon · Lindford · Headley Down · Passfield</p>
   <h1>Everything local, finally in <span>one place.</span></h1>
@@ -339,8 +350,9 @@ ${signupBlock}`,
     const pins = list.filter(p => p.lat && p.lng).map(p => ({ n: p.name, s: p.slug, lat: p.lat, lng: p.lng }));
     sitemap.push(`/${c.slug}/`);
     files[`${c.slug}/index.html`] = page({
-      title: `${c.name} in Whitehill & Bordon — woolmer`,
-      desc: `${list.length} ${c.name.toLowerCase()} in Whitehill, Bordon and nearby villages, with food hygiene ratings, opening hours${REV ? ' and local reviews' : ''}.`,
+      title: `${c.name} in Bordon & Whitehill | woolmer`,
+      jsonld: list.length ? { '@context': 'https://schema.org', '@type': 'ItemList', name: `${c.name} in Whitehill & Bordon`, numberOfItems: list.length, itemListElement: list.slice(0, 50).map((p, i) => ({ '@type': 'ListItem', position: i + 1, url: `${SITE}/p/${p.slug}/`, name: p.name })) } : null,
+      desc: list.length ? `${list.length} ${c.name.toLowerCase()} in Bordon, Whitehill, Lindford, Headley and nearby, with maps, food hygiene ratings, opening hours${REV ? ' and local reviews' : ''}. Free and independent.` : `${c.name} in Bordon, Whitehill and nearby villages. Local businesses can add themselves to woolmer free.`,
       path: `/${c.slug}/`,
       head: pins.length ? '<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">' : '',
       scripts: pins.length ? '<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin="" defer></script>' : '',
@@ -354,6 +366,54 @@ ${signupBlock}`,
     });
   }
 
+  // ---- landing pages for what local people actually search for
+  {
+    const londonDay = d => new Intl.DateTimeFormat('en-CA', { timeZone: TZ }).format(d).slice(0, 10);
+    const now = new Date(), base = new Date(londonDay(now) + 'T12:00:00Z'), dow = base.getUTCDay();
+    const fri = new Date(base); fri.setUTCDate(base.getUTCDate() + (dow === 6 ? -1 : dow === 0 ? -2 : 5 - dow));
+    const sun = new Date(fri); sun.setUTCDate(fri.getUTCDate() + 2);
+    const wkStart = londonDay(fri), wkEnd = londonDay(sun);
+    const mi = e => evMiles(e, e.place_id && byId[e.place_id]);
+    const itemList = (name, evs) => ({ '@context': 'https://schema.org', '@type': 'ItemList', name, itemListElement: evs.slice(0, 30).map((e, i) => ({ '@type': 'ListItem', position: i + 1, url: SITE + evPath(e), name: e.title })) });
+    const dayGroups = evs => {
+      const g = {}; evs.forEach(e => { (g[ukDay(e.starts_at)] = g[ukDay(e.starts_at)] || []).push(e); });
+      return Object.keys(g).sort().map(d => `<h2 class="wo-h">${fmt(d + 'T12:00:00Z', { weekday: 'long', day: 'numeric', month: 'long' })}</h2><div class="evs">${g[d].map(e => evCard(e, byId)).join('')}</div>`).join('');
+    };
+    const LP = [
+      { slug: 'this-weekend', h1: 'Things to do in Bordon this weekend', title: 'Things to do in Bordon this weekend | woolmer',
+        desc: `What's on in Whitehill, Bordon and nearby this weekend (${fmt(wkStart + 'T12:00:00Z', { day: 'numeric', month: 'short' })}–${fmt(wkEnd + 'T12:00:00Z', { day: 'numeric', month: 'short' })}): shows, markets, family days, quizzes and live music within 15 miles.`,
+        intro: 'Everything on this Friday, Saturday and Sunday in Whitehill &amp; Bordon and within about 15 miles, updated every hour.',
+        pick: e => { const d = ukDay(e.starts_at); return d >= wkStart && d <= wkEnd && mi(e) <= 15; }, link: '/whats-on/?when=weekend&miles=15' },
+      { slug: 'kids', h1: 'Things to do with kids in and around Bordon', title: 'Things to do with kids near Bordon | woolmer',
+        desc: 'Family days out, kids’ shows, toddler groups, parks and play areas in Whitehill, Bordon and within 30 miles, updated every day.',
+        intro: 'Toddler groups, family shows, holiday activities and days out, from the Phoenix to Birdworld. Everything here is marked good for kids by the organiser.',
+        pick: e => evTagList(e).includes('kids'), link: '/whats-on/?only=kids', places: p => ['Kids & family', 'Parks & outdoors'].includes(p.category) },
+      { slug: 'christmas', h1: `Christmas events near Bordon ${now.getFullYear()}`, title: `Christmas events near Bordon ${now.getFullYear()} | woolmer`,
+        desc: 'Christmas markets, pantos, carols, Santa visits and festive days out in Whitehill, Bordon and within 30 miles.',
+        intro: 'Pantos, Christmas markets, carol services, grottos and festive family days within half an hour of Bordon.',
+        pick: e => evTagList(e).includes('christmas') || /christmas|festive|santa|panto|carol|nativity|grotto|winter wonderland/i.test(e.title), link: '/whats-on/' },
+      { slug: 'free-things-to-do', h1: 'Free things to do in and around Bordon', title: 'Free things to do near Bordon | woolmer',
+        desc: 'Free events, markets, walks, parks and family days in Whitehill, Bordon and within 30 miles. No tickets, no cost.',
+        intro: 'Free events, plus the parks, commons and woods on our doorstep that cost nothing to enjoy.',
+        pick: e => evTagList(e).includes('free'), link: '/whats-on/?only=free', places: p => p.category === 'Parks & outdoors' },
+    ];
+    for (const L of LP) {
+      const evs = upcoming.filter(L.pick).slice(0, 60);
+      const pl = L.places ? places.filter(L.places).sort(sortPlaces) : [];
+      sitemap.push(`/${L.slug}/`);
+      files[`${L.slug}/index.html`] = page({
+        title: L.title, desc: L.desc, path: `/${L.slug}/`, jsonld: itemList(L.h1, evs),
+        body: `<section class="ph dk"><div class="wrap"><nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a> / <a href="/whats-on/">What's on</a> / ${esc(L.h1)}</nav><h1>${esc(L.h1)}</h1><p>${L.intro}</p></div></section>
+<section class="sec" style="padding-top:28px"><div class="wrap">
+  ${evs.length ? dayGroups(evs) : '<div class="panel"><p>Nothing listed yet. New events are added every day, so check back soon or <a href="/whats-on/">see everything on</a>.</p></div>'}
+  <p style="margin-top:20px"><a class="btn btn-navy" href="${L.link}">Filter by distance and date</a></p>
+</div></section>
+${pl.length ? `<section class="sec" style="padding-top:0"><div class="wrap"><div class="sec-head"><h2>${L.slug === 'kids' ? 'Places to take the kids' : 'Parks, commons and woods'}</h2></div><div class="grid">${pl.map(p => card(p, stats[p.id])).join('')}</div></div></section>` : ''}
+${signupBlock}`,
+      });
+    }
+  }
+
   // areas
   for (const a of AREAS) {
     const list = places.filter(p => p.area === a).sort(sortPlaces);
@@ -362,8 +422,9 @@ ${signupBlock}`,
     sitemap.push(`/${slug}/`);
     const groups = CATS.map(c => [c, list.filter(p => p.category === c.name)]).filter(([, l]) => l.length);
     files[`${slug}/index.html`] = page({
-      title: `Local businesses in ${a} — woolmer`,
-      desc: `${list.length} takeaways, pubs, cafés and shops in ${a}, near Bordon, with food hygiene ratings and opening hours.`,
+      title: `${a}: local businesses and what's on | woolmer`,
+      jsonld: { '@context': 'https://schema.org', '@type': 'ItemList', name: `Local businesses in ${a}`, itemListElement: list.slice(0, 50).map((p, i) => ({ '@type': 'ListItem', position: i + 1, url: `${SITE}/p/${p.slug}/`, name: p.name })) },
+      desc: `${list.length} takeaways, pubs, cafés, shops and services in ${a}, near Bordon, Hampshire, with maps, food hygiene ratings and opening hours.`,
       path: `/${slug}/`,
       body: `<section class="ph dk"><div class="wrap"><nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a> / ${esc(a)}</nav><h1>${esc(a)}</h1><p>${list.length} local business${list.length > 1 ? 'es' : ''}.</p></div></section>
 ${groups.map(([c, l]) => `<section class="sec" style="padding-bottom:0"><div class="wrap"><div class="sec-head"><h2>${esc(c.name)}</h2><a href="/${c.slug}/">All ${esc(c.name.toLowerCase())}</a></div><div class="grid">${l.map(p => card(p, stats[p.id])).join('')}</div></div></section>`).join('')}
@@ -461,7 +522,7 @@ ${groups.map(([c, l]) => `<section class="sec" style="padding-bottom:0"><div cla
 </article>`;
     };
     files['sport/index.html'] = page({
-      title: 'Local sport: results, fixtures and clubs in Whitehill & Bordon | woolmer',
+      title: 'Local sport in Bordon: results and clubs | woolmer',
       desc: 'Latest results, fixtures and league tables for football and cricket clubs in Whitehill, Bordon, Headley, Liphook and Kingsley.',
       path: '/sport/',
       body: `<section class="ph dk"><div class="wrap"><nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a> / Sport</nav><h1>Local sport</h1><p>Results, fixtures and tables for the clubs on our doorstep, from Saturday's first team to Sunday's under-9s. Want to play? Every club here welcomes new members.</p></div></section>
@@ -484,7 +545,7 @@ ${groups.map(([c, l]) => `<section class="sec" style="padding-bottom:0"><div cla
   }
     sitemap.push('/local/');
     files['local/index.html'] = page({
-      title: 'Bins, the tip, buses and local info for Whitehill & Bordon — woolmer', desc: 'Bin collection days, the Bordon tip, bus routes, GP surgeries, pharmacies and council contacts for Whitehill, Bordon and nearby villages.', path: '/local/',
+      title: 'Bordon bin days, tip, buses and local info | woolmer', desc: 'Bin collection days, the Bordon tip, bus routes, GP surgeries, pharmacies and council contacts for Whitehill, Bordon and nearby villages.', path: '/local/',
       body: `<section class="ph dk"><div class="wrap"><nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a> / Local info</nav><h1>Local info</h1><p>The everyday stuff: bins, the tip, buses, doctors and who to call.</p></div></section>
 <section class="sec" style="padding-top:28px"><div class="wrap info-grid">
   <div class="panel info"><span class="info-ico" aria-hidden="true">🗑️</span><h2>Bin day</h2>

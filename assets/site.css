@@ -513,3 +513,5 @@ a.deal:hover{transform:translateY(-4px) rotate(-.4deg);box-shadow:0 18px 32px -2
 .sp-src{font-size:12px;color:var(--mu)}
 .sp-links{display:flex;flex-wrap:wrap;gap:8px;margin-top:auto;padding-top:6px}
 .sp-cta{margin-top:28px}
+.nav a{white-space:nowrap}
+@media (min-width:1101px) and (max-width:1320px){.nav{gap:16px;font-size:13.5px}}
