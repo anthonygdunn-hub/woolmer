@@ -672,6 +672,7 @@ ${groups.map(([c, l]) => `<section class="sec" style="padding-bottom:0"><div cla
   <label>Your name<input name="contact_name" required maxlength="100"></label>
   <label>Your email<input name="contact_email" type="email" required maxlength="200"></label>
   <label class="chk"><input type="checkbox" name="is_owner" checked> I own or run this business</label>
+  <label class="chk"><input type="checkbox" name="dw_optin"> Also email me ideas from Dunnworks, the Bordon web designer who runs woolmer, about getting more customers online. Optional, and you can unsubscribe any time.</label>
   <label class="hp" aria-hidden="true">Leave this empty<input name="company_fax" tabindex="-1" autocomplete="off"></label>
   <button class="btn btn-navy" style="align-self:flex-start">Send for checking</button>
   <p class="msg" role="status"></p>

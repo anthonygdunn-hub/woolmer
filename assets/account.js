@@ -109,12 +109,13 @@
           '<label>Anything that helps us check (optional)<textarea name="evidence" rows="3" maxlength="1000" placeholder="e.g. a business email address, website or social account we can match"></textarea></label>' +
           '<p class="notice" style="margin:0">Signed in as ' + esc(user.email) + '. We check claims by ringing the business on its public number or matching a business email.</p>' +
           '<label class="check"><input type="checkbox" name="ok" required><span>I\'m authorised to manage this business\'s listing, and I agree to the <a href="/terms/" target="_blank">terms</a>.</span></label>' +
+          '<label class="check"><input type="checkbox" name="dw"><span>Also email me ideas from Dunnworks, the Bordon web designer who runs woolmer, about getting more customers online. Optional, and you can unsubscribe any time.</span></label>' +
           '<button class="btn btn-navy" type="submit" style="align-self:flex-start">Send my claim</button><p class="msg" role="status"></p></form>');
         var f = document.getElementById('cf');
         f.addEventListener('submit', function (e) {
           e.preventDefault(); var m = f.querySelector('.msg');
           if (!f.ok.checked) return msg(m, false, 'Please tick the box.');
-          sb.from('wb_claims').insert({ place_id: p.id, user_id: user.id, email: user.email, full_name: f.full_name.value.trim(), role: f.role.value.trim() || null, phone: f.phone.value.trim() || null, evidence: f.evidence.value.trim() || null }).then(function (r) {
+          sb.from('wb_claims').insert({ place_id: p.id, user_id: user.id, email: user.email, full_name: f.full_name.value.trim(), role: f.role.value.trim() || null, phone: f.phone.value.trim() || null, evidence: f.evidence.value.trim() || null, dw_optin: !!(f.dw && f.dw.checked) }).then(function (r) {
             if (r.error) return msg(m, false, niceErr(r.error));
             html('<h2>Thanks, claim sent</h2><p>We\'ll check it and email ' + esc(user.email) + ', usually within a day. Once it\'s approved you can edit your listing from <a href="/account/">your account</a>.</p>');
           });
