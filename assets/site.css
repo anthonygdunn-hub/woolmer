@@ -609,3 +609,13 @@ aside .su-mini{margin-top:0}
 .pmore-l i.on{font-style:normal;color:var(--teal-d);font-weight:600}
 .pmore-l li[aria-current] a{background:var(--soft);box-shadow:inset 3px 0 0 var(--orange)}
 .pmore-back{display:inline-block;margin-top:10px;font-size:14px}
+
+/* review star picker: five equal buttons that always fit the screen */
+.rate{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;width:100%;max-width:420px}
+.rate label{display:block;margin:0;cursor:pointer}
+.rate input{position:absolute;opacity:0;width:1px;height:1px;pointer-events:none}
+.rate span{display:flex;align-items:center;justify-content:center;gap:3px;min-height:44px;border:1px solid var(--ln);border-radius:12px;background:var(--card);font-weight:600;font-size:16px;color:var(--ink);transition:background .15s,border-color .15s}
+.rate i{font-style:normal;color:var(--orange)}
+.rate input:checked + span{background:var(--navy2);border-color:var(--navy2);color:#fff}
+.rate input:checked + span i{color:#FFC48F}
+.rate input:focus-visible + span{outline:3px solid var(--fountain);outline-offset:2px}

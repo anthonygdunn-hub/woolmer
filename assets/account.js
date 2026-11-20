@@ -133,7 +133,7 @@
       getPlace('id', +rid).then(function (p) {
         if (!p) return html('<p>Listing not found.</p>');
         html('<h2>Review ' + esc(p.name) + '</h2><form class="form" id="rf">' +
-          '<fieldset style="border:0;padding:0;margin:0"><legend style="font-weight:500;font-size:14px;margin-bottom:6px">Your rating</legend><div class="seg" role="radiogroup">' + [1, 2, 3, 4, 5].map(function (n) { return '<label style="flex-direction:row;align-items:center;gap:4px;padding:6px 10px"><input type="radio" name="rating" value="' + n + '" required> ' + n + '★</label>'; }).join('') + '</div></fieldset>' +
+          '<fieldset style="border:0;padding:0;margin:0"><legend style="font-weight:500;font-size:14px;margin-bottom:6px">Your rating</legend><div class="rate" role="radiogroup">' + [1, 2, 3, 4, 5].map(function (n) { return '<label><input type="radio" name="rating" value="' + n + '" required><span>' + n + '<i aria-hidden="true">★</i></span></label>'; }).join('') + '</div></fieldset>' +
           '<label>Your review<textarea name="body" rows="6" minlength="20" maxlength="2000" required placeholder="What did you have, what was good, what wasn\'t?"></textarea></label>' +
           '<label>When did you go? (optional)<input name="visited" maxlength="40" placeholder="e.g. Friday night, last week"></label>' + guide +
           '<label class="check"><input type="checkbox" name="honest" required><span>This is my honest experience, and I have no connection to this business and haven\'t been offered anything for this review.</span></label>' +
