@@ -199,13 +199,70 @@
   }
 
   function signedInChrome() {
-    var a = document.querySelector('[data-acct]'); if (a) a.textContent = 'My profile';
+    var a = document.querySelector('[data-acct]');
+    if (a) a.innerHTML = (avatar ? '<img class="h-av" src="' + esc(avatar.url) + '" alt="">' : '') + 'My profile';
     document.querySelectorAll('[data-acct-tab]').forEach(function (x) { x.textContent = 'Profile'; });
     document.documentElement.classList.add('signed-in');
     var h = document.querySelector('[data-acct-h]'), pp = document.querySelector('[data-acct-p]');
     if (h && profile) h.textContent = profile.display_name;
     if (pp) pp.textContent = 'Your saved places and events, everything you\'ve posted, and your settings.';
   }
+  var avatar = null;
+  function loadAvatar() {
+    return sb.from('wb_avatars').select('*').eq('user_id', user.id).maybeSingle().then(function (r) {
+      avatar = r.data || null;
+      try { if (avatar) localStorage.setItem('wb_av', avatar.url); else localStorage.removeItem('wb_av'); } catch (x) {}
+    });
+  }
+  function avInner() {
+    return avatar ? '<img src="' + esc(avatar.url) + '" alt="Your profile picture">' : '<span>' + esc((profile.display_name || '?').trim()[0].toUpperCase()) + '</span>';
+  }
+  function avStatus() {
+    if (!avatar) return 'No picture yet. Your initial shows instead.';
+    if (avatar.status === 'pending') return 'Thanks. We check every picture before anyone else sees it, usually within a day. You can see it now.';
+    if (avatar.status === 'rejected') return 'This picture wasn\'t approved, so only you can see it. Try a different one.';
+    return avatar.show_public === false ? 'Approved. Only you can see it, because sharing is off.' : 'Approved and showing on your reviews, questions and answers.';
+  }
+  function squareWebp(file) {
+    return new Promise(function (res, rej) {
+      var img = new Image(), url = URL.createObjectURL(file);
+      img.onload = function () {
+        var side = Math.min(img.width, img.height), c = document.createElement('canvas'), out = Math.min(400, side);
+        c.width = c.height = out;
+        c.getContext('2d').drawImage(img, (img.width - side) / 2, (img.height - side) / 2, side, side, 0, 0, out, out);
+        URL.revokeObjectURL(url);
+        c.toBlob(function (b) { b ? res(b) : rej(new Error('Could not read that picture')); }, 'image/webp', 0.85);
+      };
+      img.onerror = function () { rej(new Error('That file isn\'t a picture we can read')); };
+      img.src = url;
+    });
+  }
+  function uploadAvatar(file, m) {
+    if (!file) return;
+    if (!/^image\//.test(file.type)) return msg(m, false, 'Please pick a photo.');
+    msg(m, true, 'Uploading…');
+    var old = avatar && avatar.path, path = 'avatars/' + user.id + '/' + Date.now() + '.webp';
+    squareWebp(file).then(function (blob) {
+      return sb.storage.from('wb-public').upload(path, blob, { contentType: 'image/webp', cacheControl: '31536000' });
+    }).then(function (r) {
+      if (r.error) throw r.error;
+      var url = sb.storage.from('wb-public').getPublicUrl(path).data.publicUrl;
+      return sb.from('wb_avatars').upsert({ user_id: user.id, url: url, path: path }, { onConflict: 'user_id' });
+    }).then(function (r) {
+      if (r.error) throw r.error;
+      if (old && old !== path) sb.storage.from('wb-public').remove([old]);
+      return loadAvatar();
+    }).then(function () { msg(m, true, 'Picture saved.'); paintAv(); }).catch(function (e) { msg(m, false, 'Upload failed: ' + niceErr(e)); });
+  }
+  function paintAv() {
+    var a = app.querySelector('.pf-av'); if (a) { a.querySelectorAll('img,span:not(.pf-av-ed)').forEach(function (x) { x.remove(); }); a.insertAdjacentHTML('afterbegin', avInner()); }
+    var pv = document.getElementById('pf-pic-pv'); if (pv) pv.innerHTML = avInner();
+    var stx = document.getElementById('pf-pic-st'); if (stx) stx.textContent = avStatus();
+    var rm = document.getElementById('pf-pic-rm'); if (rm) rm.hidden = !avatar;
+    var sh = document.getElementById('pf-pic-share'); if (sh) { sh.checked = !avatar || avatar.show_public !== false; sh.disabled = !avatar; }
+    signedInChrome();
+  }
+
   var STATUS = { pending: ['Waiting to be checked', 'st-wait'], approved: ['Live', 'st-live'], rejected: ['Not published', 'st-no'], hidden: ['Hidden', 'st-no'] };
   function st(s) { var x = STATUS[s] || [s || '', 'st-wait']; return '<span class="st ' + x[1] + '">' + esc(x[0]) + '</span>'; }
   function when(d) { return new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }); }
@@ -214,18 +271,17 @@
     loadProfile().then(function (p) {
       if (!p) return profileForm(dashboard);
       if (p.banned) return html('<h2>Account suspended</h2><p class="muted">This account can\'t post on woolmer. If you think that\'s a mistake, email info@woolmer.info.</p>');
-      signedInChrome();
-      return Promise.all([
+      return loadAvatar().then(function () { signedInChrome(); return Promise.all([
         sb.from('wb_owners').select('place_id').eq('user_id', user.id),
         sb.from('wb_claims').select('status,created_at,wb_places(name,slug)').eq('user_id', user.id).order('created_at', { ascending: false }),
-      ]).then(function (r) { draw((r[0].data || []).map(function (o) { return o.place_id; }), r[1].data || []); });
+      ]).then(function (r) { draw((r[0].data || []).map(function (o) { return o.place_id; }), r[1].data || []); }); });
     });
   }
 
   function draw(owned, claims) {
     var tabs = [['saved', 'Saved'], ['posts', 'My posts'], ['settings', 'Settings']].concat(owned.length || claims.length ? [['biz', 'My business']] : []);
     var cur = (location.hash || '').slice(1); if (!tabs.some(function (t) { return t[0] === cur; })) cur = 'saved';
-    html('<div class="pf-head"><span class="pf-av" aria-hidden="true">' + esc((profile.display_name || '?').trim()[0].toUpperCase()) + '</span><div><h2>' + esc(profile.display_name) + '</h2><p class="muted">' + esc(user.email) + ' · on woolmer since ' + esc(new Date(profile.created_at).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })) + '</p></div><button class="btn btn-ghost btn-sm" id="so">Sign out</button></div>' +
+    html('<div class="pf-head"><label class="pf-av" title="Change your picture">' + avInner() + '<span class="pf-av-ed">Edit</span><input type="file" accept="image/*" hidden data-avin></label><div><h2>' + esc(profile.display_name) + '</h2><p class="muted">' + esc(user.email) + ' · on woolmer since ' + esc(new Date(profile.created_at).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })) + '</p></div><button class="btn btn-ghost btn-sm" id="so">Sign out</button></div>' +
       '<div class="pf-stats" id="pf-stats"></div>' +
       '<div class="pf-tabs" role="tablist">' + tabs.map(function (t) { return '<button type="button" role="tab" data-tab="' + t[0] + '" aria-selected="' + (t[0] === cur) + '">' + t[1] + '</button>'; }).join('') + '</div>' +
       '<div data-pane="saved"' + (cur === 'saved' ? '' : ' hidden') + '><h3>Saved places</h3><div class="grid pf-grid" id="pf-places"><p class="muted">Loading…</p></div><h3 style="margin-top:24px">Saved events</h3><div class="evs" id="pf-events"><p class="muted">Loading…</p></div></div>' +
@@ -239,6 +295,11 @@
         app.querySelectorAll('[data-pane]').forEach(function (x) { x.hidden = x.dataset.pane !== b.dataset.tab; });
         history.replaceState(null, '', '#' + b.dataset.tab);
       };
+    });
+    var hin = app.querySelector('[data-avin]');
+    if (hin) hin.addEventListener('change', function () {
+      var t = app.querySelector('[data-tab="settings"]'); if (t) t.click();
+      uploadAvatar(hin.files[0], document.getElementById('pf-pic-msg')); hin.value = '';
     });
     document.getElementById('so').addEventListener('click', function () { sb.auth.signOut().then(function () { location.href = '/'; }); });
     var paintSaved = function () {
@@ -290,12 +351,37 @@
   }
 
   function settingsHtml() {
-    return '<form class="form" id="pf-name"><h3>Your details</h3><label>Display name<input name="dn" required minlength="2" maxlength="40" value="' + esc(profile.display_name) + '"></label><p class="muted" style="font-size:13px;margin:0">Shows next to anything you post from now on. Your email is never shown.</p><button class="btn btn-navy btn-sm" style="align-self:flex-start">Save name</button><p class="msg" role="status"></p></form>' +
+    return '<div class="form" id="pf-pic"><h3>Profile picture</h3><div class="pf-pic-row"><span class="pf-av pf-av-lg" id="pf-pic-pv">' + avInner() + '</span><div style="display:flex;flex-direction:column;gap:8px"><div style="display:flex;gap:8px;flex-wrap:wrap"><label class="btn btn-navy btn-sm" style="cursor:pointer">Upload a picture<input type="file" accept="image/*" hidden id="pf-pic-in"></label><button type="button" class="btn btn-ghost btn-sm" id="pf-pic-rm"' + (avatar ? '' : ' hidden') + '>Remove</button></div><p class="muted" id="pf-pic-st" style="margin:0;font-size:13px">' + esc(avStatus()) + '</p></div></div>' +
+      '<label class="check"><input type="checkbox" id="pf-pic-share"' + (!avatar || avatar.show_public !== false ? ' checked' : '') + (avatar ? '' : ' disabled') + '><span>Show my picture on my reviews, questions and answers. Turn off to keep it just for you.</span></label>' +
+      '<p class="muted" style="margin:0;font-size:13px">A clear photo of you, or anything you like that isn\'t rude, offensive or someone else\'s. We crop it to a square.</p><p class="msg" role="status" id="pf-pic-msg"></p></div>' +
+      '<form class="form" id="pf-name" style="margin-top:24px"><h3>Your details</h3><label>Display name<input name="dn" required minlength="2" maxlength="40" value="' + esc(profile.display_name) + '"></label><p class="muted" style="font-size:13px;margin:0">Shows next to anything you post from now on. Your email is never shown.</p><button class="btn btn-navy btn-sm" style="align-self:flex-start">Save name</button><p class="msg" role="status"></p></form>' +
       '<div class="form" style="margin-top:24px"><h3>Emails</h3><label class="check"><input type="checkbox" id="pf-news" disabled><span>Send me the weekly woolmer email: what\'s on, new places and local offers</span></label><p class="msg" id="pf-news-msg" role="status"></p></div>' +
       '<div class="form" style="margin-top:24px"><h3>On this phone</h3><p class="muted" style="margin:0">Your saved places and events sync to your profile whenever you\'re signed in.</p><button type="button" class="btn btn-ghost btn-sm" id="pf-sync" style="align-self:flex-start">Sync now</button><p class="msg" role="status" id="pf-sync-msg"></p></div>' +
       '<div class="form pf-danger" style="margin-top:24px"><h3>Delete my woolmer data</h3><p class="muted" style="margin:0">Removes your profile, saved places and events, reviews, questions and answers from woolmer for good, and stops woolmer emails. It can\'t be undone.</p><button type="button" class="btn btn-ghost btn-sm" id="pf-del" style="align-self:flex-start">Delete my woolmer data</button><p class="msg" role="status" id="pf-del-msg"></p></div>';
   }
   function settingsWire() {
+    var pm = document.getElementById('pf-pic-msg'), pin = document.getElementById('pf-pic-in');
+    pin.addEventListener('change', function () { uploadAvatar(pin.files[0], pm); pin.value = ''; });
+    document.getElementById('pf-pic-rm').onclick = function () {
+      if (!avatar || !confirm('Remove your profile picture?')) return;
+      var path = avatar.path;
+      sb.from('wb_avatars').delete().eq('user_id', user.id).then(function (r) {
+        if (r.error) return msg(pm, false, niceErr(r.error));
+        sb.storage.from('wb-public').remove([path]);
+        avatar = null; try { localStorage.removeItem('wb_av'); } catch (x) {}
+        msg(pm, true, 'Removed.'); paintAv();
+      });
+    };
+    var sh = document.getElementById('pf-pic-share');
+    sh.addEventListener('change', function () {
+      if (!avatar) return;
+      sh.disabled = true;
+      sb.from('wb_avatars').update({ show_public: sh.checked }).eq('user_id', user.id).then(function (r) {
+        sh.disabled = false;
+        if (r.error) { sh.checked = !sh.checked; return msg(pm, false, niceErr(r.error)); }
+        avatar.show_public = sh.checked; msg(pm, true, sh.checked ? 'Your picture now shows on your posts.' : 'Your picture is now just for you.'); paintAv();
+      });
+    });
     var nf = document.getElementById('pf-name');
     nf.addEventListener('submit', function (e) {
       e.preventDefault(); var m = nf.querySelector('.msg'), v = nf.dn.value.trim();
@@ -322,9 +408,10 @@
     document.getElementById('pf-del').onclick = function () {
       var m = document.getElementById('pf-del-msg');
       if (!confirm('Delete your woolmer profile, saves, reviews, questions and answers for good? This can\'t be undone.')) return;
+      if (avatar && avatar.path) sb.storage.from('wb-public').remove([avatar.path]);
       sb.rpc('wb_delete_me').then(function (r) {
         if (r.error) return msg(m, false, niceErr(r.error));
-        try { ['wb_saved', 'wb_saved_ev', 'wb_saved_base', 'wb_saved_ev_base'].forEach(function (k) { localStorage.removeItem(k); }); } catch (x) {}
+        try { ['wb_av', 'wb_saved', 'wb_saved_ev', 'wb_saved_base', 'wb_saved_ev_base'].forEach(function (k) { localStorage.removeItem(k); }); } catch (x) {}
         sb.auth.signOut().then(function () { html('<h2>All done</h2><p>Your woolmer data has been deleted.</p><a class="btn btn-navy" href="/">Home</a>'); });
       });
     };

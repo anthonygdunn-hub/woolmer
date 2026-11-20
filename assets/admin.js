@@ -41,8 +41,9 @@ try { localStorage.setItem('wb_me', '1'); } catch (e) {} // the admin's own devi
       sb.from('wb_signups').select('id', { count: 'exact', head: true }).eq('handled', false),
       sb.from('wb_submissions').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
       sb.from('wb_suggestions').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
+      sb.from('wb_avatars').select('user_id', { count: 'exact', head: true }).eq('status', 'pending'),
     ]).then(function (c) {
-      var n = { sugg: c[7].count, subs: c[6].count, claims: c[0].count, mod: (c[1].count || 0) + (c[2].count || 0) + (c[3].count || 0), reports: c[4].count, signups: c[5].count };
+      var n = { sugg: c[7].count, subs: c[6].count, claims: c[0].count, mod: (c[1].count || 0) + (c[2].count || 0) + (c[3].count || 0) + (c[8].count || 0), reports: c[4].count, signups: c[5].count };
       root.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px"><h1 style="font-size:36px;margin:0 0 14px">Admin</h1><button class="btn btn-ghost btn-sm" id="so">Sign out</button></div>' +
         '<div class="tabs">' + TABS.map(function (t) { return '<button data-t="' + t[0] + '"' + (t[0] === tab ? ' class="on"' : '') + '>' + t[1] + (n[t[0]] ? '<span class="cnt">' + n[t[0]] + '</span>' : '') + '</button>'; }).join('') + '</div><div id="pane"></div>';
       document.getElementById('so').onclick = function () { sb.auth.signOut().then(function () { location.reload(); }); };
@@ -142,12 +143,18 @@ try { localStorage.setItem('wb_me', '1'); } catch (e) {} // the admin's own devi
       sb.from('wb_reviews').select('*,wb_places(name,slug)').eq('status', 'pending').order('created_at'),
       sb.from('wb_questions').select('*,wb_places(name,slug)').eq('status', 'pending').order('created_at'),
       sb.from('wb_answers').select('*,wb_questions(body)').eq('status', 'pending').order('created_at'),
+      sb.from('wb_avatars').select('user_id,url,path,created_at').eq('status', 'pending').order('created_at'),
     ]).then(function (r) {
-      var h = '';
+      var h = '', avs = r[3].data || [];
+      if (avs.length) h += '<h3>Profile pictures</h3><div class="av-mod">' + avs.map(function (x) {
+        return '<div class="item" style="display:flex;gap:12px;align-items:center"><img src="' + esc(x.url) + '" alt="" style="width:72px;height:72px;border-radius:50%;object-fit:cover"><div><span class="meta">' + when(x.created_at) + '</span><div class="acts"><button class="btn btn-navy btn-sm" data-avok="' + esc(x.user_id) + '">Approve</button><button class="btn btn-ghost btn-sm" data-avno="' + esc(x.user_id) + '">Reject</button></div></div></div>';
+      }).join('') + '</div>';
       (r[0].data || []).forEach(function (x) { h += item('wb_reviews', x, 'Review of ' + esc(x.wb_places && x.wb_places.name) + ' · ' + '★★★★★'.slice(0, x.rating) + (x.visited ? ' · visited ' + esc(x.visited) : '')); });
       (r[1].data || []).forEach(function (x) { h += item('wb_questions', x, 'Question' + (x.wb_places ? ' about ' + esc(x.wb_places.name) : ' for the town' + (x.topic ? ' · ' + esc(x.topic) : ''))); });
       (r[2].data || []).forEach(function (x) { h += item('wb_answers', x, (x.is_owner ? 'Owner answer' : 'Answer') + ' to: ' + esc(x.wb_questions && x.wb_questions.body)); });
       pane(h || '<p class="muted">Nothing waiting. Lovely.</p>');
+      act('[data-avok]', function (b) { return sb.from('wb_avatars').update({ status: 'approved' }).eq('user_id', b.dataset.avok).then(chk); });
+      act('[data-avno]', function (b) { return sb.from('wb_avatars').update({ status: 'rejected' }).eq('user_id', b.dataset.avno).then(chk); });
       act('[data-ap]', function (b) { return sb.from(b.dataset.tbl).update({ status: 'approved' }).eq('id', +b.dataset.ap).then(chk); });
       act('[data-rj]', function (b) { var note = b.dataset.tbl === 'wb_reviews' ? prompt('Reason (kept privately, optional)') : null; var u = { status: 'rejected' }; if (note) u.mod_note = note; return sb.from(b.dataset.tbl).update(u).eq('id', +b.dataset.rj).then(chk); });
       act('[data-ban]', function (b) { if (!confirm('Suspend this user? They won\'t be able to post again.')) return Promise.reject('Cancelled'); return sb.from('wb_profiles').update({ banned: true }).eq('user_id', b.dataset.ban).then(chk).then(function () { return sb.from(b.dataset.tbl).update({ status: 'rejected' }).eq('id', +b.dataset.id).then(chk); }); });

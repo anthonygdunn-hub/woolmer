@@ -570,3 +570,18 @@ aside .su-mini{margin-top:0}
 .st-no{background:#EEF1F3;color:#4A5865}
 .pf-danger h3{color:#A12C2C}
 @media (max-width:640px){.pf-stats{grid-template-columns:repeat(2,1fr)}}
+
+/* ---- profile pictures */
+.av{width:36px;height:36px;border-radius:50%;background:var(--navy);color:var(--orange);display:inline-grid;place-items:center;font:600 15px 'Inter Tight',Inter,sans-serif;flex:none;overflow:hidden;vertical-align:middle}
+.av img{width:100%;height:100%;object-fit:cover}
+.av-s{width:22px;height:22px;font-size:11px;margin-right:6px}
+.review .who{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.who-s{display:flex;align-items:center;flex-wrap:wrap}
+.reply .av-s{vertical-align:-6px}
+.pf-av{position:relative;cursor:pointer;overflow:hidden}
+.pf-av img{width:100%;height:100%;object-fit:cover}
+.pf-av-ed{position:absolute;left:0;right:0;bottom:0;background:rgba(12,36,60,.75);color:#fff;font:600 10px Inter,sans-serif;text-align:center;padding:2px 0;opacity:0;transition:opacity .2s}
+.pf-av:hover .pf-av-ed,.pf-av:focus-within .pf-av-ed{opacity:1}
+.pf-av-lg{width:88px;height:88px;font-size:36px;cursor:default}
+.pf-pic-row{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.h-av{width:22px;height:22px;border-radius:50%;object-fit:cover;margin:-4px 6px -4px -4px;vertical-align:middle}

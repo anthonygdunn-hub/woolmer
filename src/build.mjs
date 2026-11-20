@@ -220,7 +220,7 @@ ${jsonld ? `<script type="application/ld+json">${JSON.stringify(jsonld).replace(
     </div>
   </div>
 </header>
-<script>(function(){try{var t=JSON.parse(localStorage.getItem(${JSON.stringify('sb-' + new URL(SB_URL).hostname.split('.')[0] + '-auth-token')})||'null');if(!t||!t.user)return;document.documentElement.classList.add('signed-in');var a=document.querySelector('[data-acct]');if(a){a.textContent='My profile';a.setAttribute('aria-label','My profile');}}catch(e){}})();</script>
+<script>(function(){try{var t=JSON.parse(localStorage.getItem(${JSON.stringify('sb-' + new URL(SB_URL).hostname.split('.')[0] + '-auth-token')})||'null');if(!t||!t.user)return;document.documentElement.classList.add('signed-in');var a=document.querySelector('[data-acct]');if(a){a.textContent='My profile';a.setAttribute('aria-label','My profile');var v=localStorage.getItem('wb_av');if(v&&/^https:\\/\\//.test(v)){var i=document.createElement('img');i.className='h-av';i.alt='';i.src=v;a.prepend(i);}}}catch(e){}})();</script>
 <div class="evstrip" id="evstrip" hidden></div>
 <main id="main">
 ${body}

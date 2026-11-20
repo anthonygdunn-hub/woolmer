@@ -37,6 +37,20 @@
     var clean = location.pathname + (q.toString() ? '?' + q : '');
     return sb.auth.verifyOtp({ token_hash: th, type: 'magiclink' }).then(function (r) { history.replaceState(null, '', clean); return r; });
   };
+  // profile pictures: initials until a checked, shared picture loads
+  WB.avHtml = function (name, uid, cls) {
+    var i = String(name || '?').trim().charAt(0).toUpperCase() || '?';
+    return '<span class="av' + (cls ? ' ' + cls : '') + '"' + (uid ? ' data-uid="' + WB.esc(uid) + '"' : '') + ' aria-hidden="true">' + WB.esc(i) + '</span>';
+  };
+  WB.fillAvatars = function (box) {
+    var els = [].slice.call((box || document).querySelectorAll('.av[data-uid]')), ids = {};
+    els.forEach(function (e) { if (/^[0-9a-f-]{36}$/i.test(e.dataset.uid)) ids[e.dataset.uid] = 1; });
+    ids = Object.keys(ids); if (!ids.length) return;
+    WB.rest('wb_avatars?select=user_id,url&status=eq.approved&show_public=eq.true&user_id=in.(' + ids.join(',') + ')').then(function (rows) {
+      var by = {}; (rows || []).forEach(function (r) { by[r.user_id] = r.url; });
+      els.forEach(function (e) { var u = by[e.dataset.uid]; if (u && /^https:\/\//.test(u)) e.innerHTML = '<img src="' + WB.esc(u) + '" alt="" loading="lazy">'; });
+    }).catch(function () {});
+  };
   window.WB = WB;
 
   // mobile menu

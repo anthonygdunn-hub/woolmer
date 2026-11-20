@@ -30,27 +30,29 @@
 
   WB.getSettings().then(function (s) {
     var on = s.reviews_enabled === true;
-    WB.rest('wb_reviews?select=id,display_name,rating,body,visited,owner_reply,owner_reply_at,created_at&place_id=eq.' + id + '&status=eq.approved&order=created_at.desc').then(function (rows) {
+    WB.rest('wb_reviews?select=id,user_id,display_name,rating,body,visited,owner_reply,owner_reply_at,created_at&place_id=eq.' + id + '&status=eq.approved&order=created_at.desc').then(function (rows) {
       var box = document.getElementById('reviews-list');
       if (!rows.length) { box.innerHTML = '<p class="muted">No reviews yet.' + (on ? ' Be the first.' : '') + '</p>'; }
       else box.innerHTML = rows.map(function (r) {
-        return '<article class="review"><div class="who"><strong>' + WB.esc(r.display_name) + '</strong><span class="stars" aria-label="' + r.rating + ' out of 5">' + stars(r.rating) + '</span><span class="muted">' + date(r.created_at) + '</span></div>' +
+        return '<article class="review"><div class="who">' + WB.avHtml(r.display_name, r.user_id) + '<strong>' + WB.esc(r.display_name) + '</strong><span class="stars" aria-label="' + r.rating + ' out of 5">' + stars(r.rating) + '</span><span class="muted">' + date(r.created_at) + '</span></div>' +
           '<p style="margin:0">' + WB.esc(r.body) + '</p>' +
           (r.owner_reply ? '<div class="reply"><strong>Reply from the owner:</strong> ' + WB.esc(r.owner_reply) + '</div>' : '') +
           '<button class="linkish" type="button" data-report="review" data-id="' + r.id + '">Report</button></article>';
       }).join('');
+      WB.fillAvatars(box);
     }).catch(function () { document.getElementById('reviews-list').innerHTML = '<p class="muted">Reviews couldn\'t load just now.</p>'; });
 
-    WB.rest('wb_questions?select=id,display_name,body,created_at,wb_answers(id,display_name,body,is_owner,status,created_at)&place_id=eq.' + id + '&status=eq.approved&order=created_at.desc').then(function (rows) {
+    WB.rest('wb_questions?select=id,user_id,display_name,body,created_at,wb_answers(id,user_id,display_name,body,is_owner,status,created_at)&place_id=eq.' + id + '&status=eq.approved&order=created_at.desc').then(function (rows) {
       var box = document.getElementById('q-list');
       if (!rows.length) { box.innerHTML = '<p class="muted">No questions yet.</p>'; return; }
       box.innerHTML = rows.map(function (q) {
         var ans = (q.wb_answers || []).filter(function (a) { return a.status === 'approved'; });
-        return '<article class="review"><strong>Q: ' + WB.esc(q.body) + '</strong><div class="muted" style="font-size:13px">' + WB.esc(q.display_name) + ' · ' + date(q.created_at) + '</div>' +
-          ans.map(function (a) { return '<div class="reply"><strong>' + (a.is_owner ? 'Owner' : WB.esc(a.display_name)) + ':</strong> ' + WB.esc(a.body) + ' <button class="linkish" type="button" data-report="answer" data-id="' + a.id + '">Report</button></div>'; }).join('') +
+        return '<article class="review"><strong>Q: ' + WB.esc(q.body) + '</strong><div class="muted who-s" style="font-size:13px">' + WB.avHtml(q.display_name, q.user_id, 'av-s') + WB.esc(q.display_name) + ' · ' + date(q.created_at) + '</div>' +
+          ans.map(function (a) { return '<div class="reply">' + (a.is_owner ? '' : WB.avHtml(a.display_name, a.user_id, 'av-s')) + '<strong>' + (a.is_owner ? 'Owner' : WB.esc(a.display_name)) + ':</strong> ' + WB.esc(a.body) + ' <button class="linkish" type="button" data-report="answer" data-id="' + a.id + '">Report</button></div>'; }).join('') +
           (on ? '<a class="linkish" href="/account/?answer=' + q.id + '&back=' + encodeURIComponent(location.pathname) + '">Answer this</a> ' : '') +
           '<button class="linkish" type="button" data-report="question" data-id="' + q.id + '">Report</button></article>';
       }).join('');
+      WB.fillAvatars(box);
     }).catch(function () { document.getElementById('q-list').innerHTML = ''; });
 
     document.getElementById('review-cta').innerHTML = on
