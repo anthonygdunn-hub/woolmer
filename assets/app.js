@@ -159,7 +159,13 @@
     }
   });
   WB.paintSaves();
-  if (WB.session()) WB.syncSaves();
+  if (WB.session()) {
+    // backup for pages served from cache before the header script existed
+    document.documentElement.classList.add('signed-in');
+    var ha = document.querySelector('[data-acct]') || document.querySelector('.h-actions a[href="/account/"]'); if (ha) ha.textContent = 'My profile';
+    document.querySelectorAll('.tabbar a[href="/account/"] span').forEach(function (x) { x.textContent = 'Profile'; });
+    WB.syncSaves();
+  }
 
   // ---------------------------------------------------------------- places data and cards
   var placesP = null;
