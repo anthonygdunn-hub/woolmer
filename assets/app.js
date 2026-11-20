@@ -283,6 +283,7 @@
       cards.forEach(function (c) {
         var p = by[c.dataset.slug], st = status(p && p.o);
         groups[st.g].push(c);
+        c.dataset.oc = st.g === 'open' && !st.soon ? 'open' : st.g;
         if (st.label && !c.querySelector('.oc')) {
           var pill = document.createElement('span');
           pill.className = 'oc oc-' + st.g + (st.soon ? ' oc-soon' : '');
@@ -302,8 +303,7 @@
         box.appendChild(g); grid.appendChild(box);
       });
       // keep the area filter on category pages tidy
-      var tidy = function () { grid.querySelectorAll('.split-g').forEach(function (b) { b.hidden = !b.querySelector('.card:not([hidden])'); }); };
-      document.querySelectorAll('.chip-l[data-area]').forEach(function (ch) { ch.addEventListener('click', function () { setTimeout(tidy, 0); }); });
+      if (WB.filterRun) WB.filterRun(); // re-apply category filters now open/closed is known
     });
   }).catch(function () {});
 })();

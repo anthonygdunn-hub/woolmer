@@ -258,10 +258,19 @@ function artHtml(p) {
   if (ph) return `<div class="art has-photo"><img src="${esc(ph.src)}" alt="${esc(ph.alt || p.name)}" loading="lazy" decoding="async">`;
   return `<div class="art art-c" data-cat="${esc(c ? c.slug : '')}">${ico ? `<svg class="art-ico" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">${ico}</svg>` : ''}<span class="initial" aria-hidden="true">${esc(p.name.replace(/^the\s+/i, '')[0] || '')}</span>`;
 }
+// cuisine tiles on the Takeaways page, worked out from each place's tags
+const TAKEAWAY_TYPES = [
+  ['pizza', 'Pizza', '🍕', /pizza/i], ['indian', 'Indian', '🍛', /indian|curry/i], ['chinese', 'Chinese', '🥡', /chinese/i],
+  ['fish', 'Fish & chips', '🐟', /fish and chips|chippy/i], ['kebab', 'Kebab', '🥙', /kebab/i], ['burgers', 'Burgers', '🍔', /burger/i],
+  ['chicken', 'Chicken', '🍗', /chicken|wings/i], ['asian', 'Thai & Japanese', '🍜', /thai|japanese|sushi/i], ['mexican', 'Mexican', '🌯', /mexican|burrito/i],
+  ['bakery', 'Breakfast & bakes', '🥐', /bakery|breakfast|baguette|sandwich/i],
+];
+const placeTypes = p => TAKEAWAY_TYPES.filter(t => (p.tags || []).some(x => t[3].test(x))).map(t => t[0]);
+
 function card(p, stat) {
   const c = catBySlug[p.category];
   const sub = [c ? c.name : p.category, p.area].filter(Boolean).join(' · ');
-  return `<a class="card" href="/p/${p.slug}/" data-slug="${p.slug}" data-area="${esc(p.area || '')}" data-name="${esc(p.name.toLowerCase())}">
+  return `<a class="card" href="/p/${p.slug}/" data-slug="${p.slug}" data-area="${esc(p.area || '')}" data-types="${placeTypes(p).join(' ')}" data-fsa="${/^[0-5]$/.test(p.hygiene_rating || '') ? p.hygiene_rating : ''}"${p.claimed ? ' data-v="1"' : ''} data-name="${esc(p.name.toLowerCase())}">
   ${artHtml(p)}${isFeatured(p) ? '<span class="badge badge-f">Featured</span>' : p.claimed ? '<span class="badge badge-v">Owner-verified</span>' : ''}</div>
   <div class="body">
     <h3>${esc(p.name)}</h3>
@@ -371,6 +380,8 @@ ${signupBlock}`,
       scripts: pins.length ? '<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin="" defer></script>' : '',
       body: `<section class="ph dk"><div class="wrap"><nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a> / ${esc(c.name)}</nav><h1>${esc(c.name)} in Whitehill &amp; Bordon</h1><p>${esc(c.blurb)}.${list.length ? ` ${list.length} place${list.length > 1 ? 's' : ''}.` : ''}</p></div></section>
 <section class="sec" style="padding-top:28px"><div class="wrap">
+  ${c.name === 'Takeaways' ? (() => { const used = TAKEAWAY_TYPES.map(t => [t, list.filter(p => placeTypes(p).includes(t[0])).length]).filter(x => x[1]); return `<div class="ty-row" role="group" aria-label="Type of food">${used.map(([t, n]) => `<button class="ty" type="button" data-type="${t[0]}" aria-pressed="false"><span class="ty-i" aria-hidden="true">${t[2]}</span><span class="ty-l">${esc(t[1])}</span><span class="ty-n">${n}</span></button>`).join('')}</div>
+  <div class="chips ty-tog" role="group" aria-label="Only show"><button class="chip chip-l" type="button" data-only="open" aria-pressed="false">Open now</button><button class="chip chip-l" type="button" data-only="fsa" aria-pressed="false">Hygiene 4 or 5</button><button class="chip chip-l" type="button" data-only="v" aria-pressed="false">Owner-verified</button><span class="ty-count" id="ty-count" aria-live="polite"></span></div>`; })() : ''}
   <div class="chips" role="group" aria-label="Filter by area" style="margin:0 0 20px"><button class="chip chip-l" type="button" data-area="" aria-pressed="true">Everywhere</button>${areas.map(a => `<button class="chip chip-l" type="button" data-area="${esc(a)}" aria-pressed="false">${esc(a)}</button>`).join('')}</div>
   ${pins.length ? `<div class="map map-lg" id="map" data-pins="${esc(JSON.stringify(pins))}" role="region" aria-label="Map of ${esc(c.name.toLowerCase())}" style="margin-bottom:24px"></div>` : ''}
   ${list.length ? `<div class="grid" id="list" data-split="${c.name === 'Takeaways' ? 'tonight' : 'today'}">${list.map(p => card(p, stats[p.id])).join('')}</div>` : `<div class="panel empty-cat"><h2>Just opened</h2><p>We only list businesses that add themselves or that we can check from official records, so this section starts empty. Local ${esc(c.name.toLowerCase())} businesses can add themselves free in two minutes.</p></div>`}

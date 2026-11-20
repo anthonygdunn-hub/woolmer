@@ -43,15 +43,48 @@
   var btn = document.querySelector('.menu-btn'), nav = document.getElementById('nav');
   if (btn && nav) btn.addEventListener('click', function () { var o = nav.classList.toggle('open'); btn.setAttribute('aria-expanded', String(o)); });
 
-  // area filter on category pages
+  // category page filters: area, food type (Takeaways) and only-show toggles, all combined
   var chips = document.querySelectorAll('.chip-l[data-area]'), list = document.getElementById('list');
-  if (chips.length && list) chips.forEach(function (c) {
-    c.addEventListener('click', function () {
-      chips.forEach(function (x) { x.setAttribute('aria-pressed', String(x === c)); });
-      var a = c.dataset.area;
-      list.querySelectorAll('.card').forEach(function (card) { card.hidden = !!a && card.dataset.area !== a; });
-    });
-  });
+  var tys = document.querySelectorAll('.ty[data-type]'), togs = document.querySelectorAll('[data-only]'), cnt = document.getElementById('ty-count');
+  if (list && (chips.length || tys.length)) {
+    var F = { area: '', types: {}, only: {} };
+    try {
+      var q = new URLSearchParams(location.search);
+      (q.get('type') || '').split(',').forEach(function (t) { if (t) F.types[t] = 1; });
+      (q.get('only') || '').split(',').forEach(function (t) { if (t) F.only[t] = 1; });
+      F.area = q.get('area') || '';
+    } catch (x) {}
+    var run = function () {
+      var ts = Object.keys(F.types), n = 0;
+      list.querySelectorAll('.card').forEach(function (card) {
+        var my = (card.dataset.types || '').split(' ');
+        var ok = (!F.area || card.dataset.area === F.area) &&
+          (!ts.length || ts.some(function (t) { return my.indexOf(t) >= 0; })) &&
+          (!F.only.open || card.dataset.oc === 'open') &&
+          (!F.only.fsa || +card.dataset.fsa >= 4) &&
+          (!F.only.v || card.dataset.v === '1');
+        card.hidden = !ok; if (ok) n++;
+      });
+      list.querySelectorAll('.split-g').forEach(function (b) { b.hidden = !b.querySelector('.card:not([hidden])'); });
+      chips.forEach(function (x) { x.setAttribute('aria-pressed', String(x.dataset.area === F.area)); });
+      tys.forEach(function (x) { x.setAttribute('aria-pressed', String(!!F.types[x.dataset.type])); });
+      togs.forEach(function (x) { x.setAttribute('aria-pressed', String(!!F.only[x.dataset.only])); });
+      if (cnt) cnt.textContent = (ts.length || Object.keys(F.only).length || F.area) ? n + (n === 1 ? ' place' : ' places') : '';
+      try {
+        var u = new URL(location.href);
+        ['type', 'only', 'area'].forEach(function (k) { u.searchParams.delete(k); });
+        if (ts.length) u.searchParams.set('type', ts.join(','));
+        if (Object.keys(F.only).length) u.searchParams.set('only', Object.keys(F.only).join(','));
+        if (F.area) u.searchParams.set('area', F.area);
+        history.replaceState(null, '', u);
+      } catch (x) {}
+    };
+    chips.forEach(function (c) { c.addEventListener('click', function () { F.area = c.dataset.area; run(); }); });
+    tys.forEach(function (c) { c.addEventListener('click', function () { var t = c.dataset.type; if (F.types[t]) delete F.types[t]; else F.types[t] = 1; run(); }); });
+    togs.forEach(function (c) { c.addEventListener('click', function () { var t = c.dataset.only; if (F.only[t]) delete F.only[t]; else F.only[t] = 1; run(); }); });
+    WB.filterRun = run;
+    run();
+  }
 
   // maps (Leaflet + OpenStreetMap)
   function maps() {
