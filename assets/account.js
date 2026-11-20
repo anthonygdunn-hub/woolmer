@@ -198,23 +198,136 @@
     return out.slice(0, 30);
   }
 
+  function signedInChrome() {
+    var a = document.querySelector('[data-acct]'); if (a) a.textContent = 'My profile';
+    document.querySelectorAll('[data-acct-tab]').forEach(function (x) { x.textContent = 'Profile'; });
+    document.documentElement.classList.add('signed-in');
+    var h = document.querySelector('[data-acct-h]'), pp = document.querySelector('[data-acct-p]');
+    if (h && profile) h.textContent = profile.display_name;
+    if (pp) pp.textContent = 'Your saved places and events, everything you\'ve posted, and your settings.';
+  }
+  var STATUS = { pending: ['Waiting to be checked', 'st-wait'], approved: ['Live', 'st-live'], rejected: ['Not published', 'st-no'], hidden: ['Hidden', 'st-no'] };
+  function st(s) { var x = STATUS[s] || [s || '', 'st-wait']; return '<span class="st ' + x[1] + '">' + esc(x[0]) + '</span>'; }
+  function when(d) { return new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }); }
+
   function dashboard() {
-    Promise.all([
-      loadProfile(),
-      sb.from('wb_owners').select('place_id').eq('user_id', user.id),
-      sb.from('wb_claims').select('status,created_at,wb_places(name,slug)').eq('user_id', user.id).order('created_at', { ascending: false }),
-    ]).then(function (r) {
-      var owned = (r[1].data || []).map(function (o) { return o.place_id; });
-      var claims = r[2].data || [];
-      var h = '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap"><h2>Hello' + (profile ? ', ' + esc(profile.display_name) : '') + '</h2><button class="btn btn-ghost btn-sm" id="so">Sign out</button></div>' +
-        '<p class="muted">Signed in as ' + esc(user.email) + '</p>';
-      if (claims.length) h += '<h3 style="margin-top:20px">Your claims</h3><ul>' + claims.map(function (c) { return '<li>' + esc(c.wb_places ? c.wb_places.name : '') + ': <strong>' + esc(c.status) + '</strong></li>'; }).join('') + '</ul>';
-      if (!owned.length) h += '<p class="notice" style="margin-top:20px">Run a local business? <a href="/search/">Find it</a> and press "Claim this listing".</p>';
-      h += '<div id="owned"></div>';
-      html(h);
-      document.getElementById('so').addEventListener('click', function () { sb.auth.signOut().then(function () { location.href = '/'; }); });
-      owned.forEach(function (id) { ownerPanel(id); });
+    loadProfile().then(function (p) {
+      if (!p) return profileForm(dashboard);
+      if (p.banned) return html('<h2>Account suspended</h2><p class="muted">This account can\'t post on woolmer. If you think that\'s a mistake, email info@woolmer.info.</p>');
+      signedInChrome();
+      return Promise.all([
+        sb.from('wb_owners').select('place_id').eq('user_id', user.id),
+        sb.from('wb_claims').select('status,created_at,wb_places(name,slug)').eq('user_id', user.id).order('created_at', { ascending: false }),
+      ]).then(function (r) { draw((r[0].data || []).map(function (o) { return o.place_id; }), r[1].data || []); });
     });
+  }
+
+  function draw(owned, claims) {
+    var tabs = [['saved', 'Saved'], ['posts', 'My posts'], ['settings', 'Settings']].concat(owned.length || claims.length ? [['biz', 'My business']] : []);
+    var cur = (location.hash || '').slice(1); if (!tabs.some(function (t) { return t[0] === cur; })) cur = 'saved';
+    html('<div class="pf-head"><span class="pf-av" aria-hidden="true">' + esc((profile.display_name || '?').trim()[0].toUpperCase()) + '</span><div><h2>' + esc(profile.display_name) + '</h2><p class="muted">' + esc(user.email) + ' · on woolmer since ' + esc(new Date(profile.created_at).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })) + '</p></div><button class="btn btn-ghost btn-sm" id="so">Sign out</button></div>' +
+      '<div class="pf-stats" id="pf-stats"></div>' +
+      '<div class="pf-tabs" role="tablist">' + tabs.map(function (t) { return '<button type="button" role="tab" data-tab="' + t[0] + '" aria-selected="' + (t[0] === cur) + '">' + t[1] + '</button>'; }).join('') + '</div>' +
+      '<div data-pane="saved"' + (cur === 'saved' ? '' : ' hidden') + '><h3>Saved places</h3><div class="grid pf-grid" id="pf-places"><p class="muted">Loading…</p></div><h3 style="margin-top:24px">Saved events</h3><div class="evs" id="pf-events"><p class="muted">Loading…</p></div></div>' +
+      '<div data-pane="posts"' + (cur === 'posts' ? '' : ' hidden') + '><div id="pf-posts"><p class="muted">Loading…</p></div></div>' +
+      '<div data-pane="settings"' + (cur === 'settings' ? '' : ' hidden') + '>' + settingsHtml() + '</div>' +
+      (tabs.length > 3 ? '<div data-pane="biz"' + (cur === 'biz' ? '' : ' hidden') + '>' + (claims.length ? '<h3>Your claims</h3><ul>' + claims.map(function (c) { return '<li>' + esc(c.wb_places ? c.wb_places.name : '') + ': <strong>' + esc(c.status) + '</strong></li>'; }).join('') + '</ul>' : '') + '<div id="owned"></div></div>' : ''));
+    if (!owned.length) app.insertAdjacentHTML('beforeend', '<p class="notice" style="margin-top:24px">Run a local business? <a href="/search/">Find it</a> and press "Claim this listing". It\'s free.</p>');
+    app.querySelectorAll('[data-tab]').forEach(function (b) {
+      b.onclick = function () {
+        app.querySelectorAll('[data-tab]').forEach(function (x) { x.setAttribute('aria-selected', String(x === b)); });
+        app.querySelectorAll('[data-pane]').forEach(function (x) { x.hidden = x.dataset.pane !== b.dataset.tab; });
+        history.replaceState(null, '', '#' + b.dataset.tab);
+      };
+    });
+    document.getElementById('so').addEventListener('click', function () { sb.auth.signOut().then(function () { location.href = '/'; }); });
+    var paintSaved = function () {
+      WB.renderSavedPlaces(document.getElementById('pf-places'));
+      WB.renderSavedEvents(document.getElementById('pf-events')).then(stats);
+    };
+    paintSaved();
+    document.addEventListener('wb:saves', paintSaved);
+    WB.syncSaves && WB.syncSaves();
+    posts();
+    settingsWire();
+    owned.forEach(function (id) { ownerPanel(id); });
+  }
+
+  var counts = { r: 0, q: 0 };
+  function stats() {
+    var el = document.getElementById('pf-stats'); if (!el) return;
+    var n = function (v, one, many) { return '<div><b>' + v + '</b><span>' + (v === 1 ? one : many) + '</span></div>'; };
+    el.innerHTML = n(WB.saved('place').length, 'saved place', 'saved places') + n(WB.saved('event').length, 'saved event', 'saved events') + n(counts.r, 'review', 'reviews') + n(counts.q, 'question or answer', 'questions & answers');
+  }
+
+  function posts() {
+    var box = document.getElementById('pf-posts');
+    Promise.all([
+      sb.from('wb_reviews').select('id,rating,body,status,owner_reply,created_at,wb_places(name,slug)').eq('user_id', user.id).order('created_at', { ascending: false }),
+      sb.from('wb_questions').select('id,body,topic,status,created_at,wb_places(name,slug),wb_answers(id,status,display_name,is_owner,body)').eq('user_id', user.id).order('created_at', { ascending: false }),
+      sb.from('wb_answers').select('id,body,status,created_at,wb_questions(body,place_id,wb_places(name,slug))').eq('user_id', user.id).order('created_at', { ascending: false }),
+    ]).then(function (r) {
+      var rv = r[0].data || [], qs = r[1].data || [], an = r[2].data || [];
+      counts = { r: rv.length, q: qs.length + an.length }; stats();
+      var h = '<h3>Reviews</h3>' + (rv.length ? rv.map(function (x) {
+        var pl = x.wb_places;
+        return '<div class="pf-item"><div class="pf-row"><strong>' + (pl ? '<a href="/p/' + esc(pl.slug) + '/">' + esc(pl.name) + '</a>' : 'A business') + '</strong>' + st(x.status) + '</div>' +
+          '<p class="meta"><span class="stars">' + '★★★★★'.slice(0, x.rating) + '</span> · ' + when(x.created_at) + '</p><p>' + esc(x.body) + '</p>' +
+          (x.owner_reply ? '<div class="reply"><strong>Owner replied:</strong> ' + esc(x.owner_reply) + '</div>' : '') + '</div>';
+      }).join('') : '<p class="muted">You haven\'t reviewed anywhere yet. Find somewhere you\'ve been and tap "Write a review".</p>');
+      h += '<h3 style="margin-top:24px">Questions</h3>' + (qs.length ? qs.map(function (x) {
+        var pl = x.wb_places, ans = (x.wb_answers || []).filter(function (a) { return a.status === 'approved'; });
+        return '<div class="pf-item"><div class="pf-row"><strong>' + (pl ? '<a href="/p/' + esc(pl.slug) + '/">' + esc(pl.name) + '</a>' : '<a href="/ask/">Ask the town</a>' + (x.topic ? ' · ' + esc(x.topic) : '')) + '</strong>' + st(x.status) + '</div>' +
+          '<p class="meta">' + when(x.created_at) + ' · ' + (ans.length ? ans.length + (ans.length === 1 ? ' answer' : ' answers') : 'no answers yet') + '</p><p>' + esc(x.body) + '</p>' +
+          ans.slice(0, 3).map(function (a) { return '<div class="reply"><strong>' + esc(a.display_name) + (a.is_owner ? ' (owner)' : '') + ':</strong> ' + esc(a.body) + '</div>'; }).join('') + '</div>';
+      }).join('') : '<p class="muted">No questions yet. <a href="/ask/">Ask the town</a> anything.</p>');
+      if (an.length) h += '<h3 style="margin-top:24px">Your answers</h3>' + an.map(function (x) {
+        var q = x.wb_questions || {}, pl = q.wb_places;
+        return '<div class="pf-item"><div class="pf-row"><strong>' + (pl ? '<a href="/p/' + esc(pl.slug) + '/">' + esc(pl.name) + '</a>' : '<a href="/ask/">Ask the town</a>') + '</strong>' + st(x.status) + '</div><p class="meta">Q: ' + esc(q.body || '') + '</p><p>' + esc(x.body) + '</p></div>';
+      }).join('');
+      box.innerHTML = h;
+    });
+  }
+
+  function settingsHtml() {
+    return '<form class="form" id="pf-name"><h3>Your details</h3><label>Display name<input name="dn" required minlength="2" maxlength="40" value="' + esc(profile.display_name) + '"></label><p class="muted" style="font-size:13px;margin:0">Shows next to anything you post from now on. Your email is never shown.</p><button class="btn btn-navy btn-sm" style="align-self:flex-start">Save name</button><p class="msg" role="status"></p></form>' +
+      '<div class="form" style="margin-top:24px"><h3>Emails</h3><label class="check"><input type="checkbox" id="pf-news" disabled><span>Send me the weekly woolmer email: what\'s on, new places and local offers</span></label><p class="msg" id="pf-news-msg" role="status"></p></div>' +
+      '<div class="form" style="margin-top:24px"><h3>On this phone</h3><p class="muted" style="margin:0">Your saved places and events sync to your profile whenever you\'re signed in.</p><button type="button" class="btn btn-ghost btn-sm" id="pf-sync" style="align-self:flex-start">Sync now</button><p class="msg" role="status" id="pf-sync-msg"></p></div>' +
+      '<div class="form pf-danger" style="margin-top:24px"><h3>Delete my woolmer data</h3><p class="muted" style="margin:0">Removes your profile, saved places and events, reviews, questions and answers from woolmer for good, and stops woolmer emails. It can\'t be undone.</p><button type="button" class="btn btn-ghost btn-sm" id="pf-del" style="align-self:flex-start">Delete my woolmer data</button><p class="msg" role="status" id="pf-del-msg"></p></div>';
+  }
+  function settingsWire() {
+    var nf = document.getElementById('pf-name');
+    nf.addEventListener('submit', function (e) {
+      e.preventDefault(); var m = nf.querySelector('.msg'), v = nf.dn.value.trim();
+      sb.from('wb_profiles').update({ display_name: v }).eq('user_id', user.id).then(function (r) {
+        if (r.error) return msg(m, false, niceErr(r.error));
+        profile.display_name = v; msg(m, true, 'Saved.');
+        var h = document.querySelector('.pf-head h2'); if (h) h.textContent = v; signedInChrome();
+      });
+    });
+    var nb = document.getElementById('pf-news'), nm = document.getElementById('pf-news-msg');
+    sb.rpc('wb_my_newsletter').then(function (r) { if (!r.error) { nb.checked = !!r.data; nb.disabled = false; } });
+    nb.addEventListener('change', function () {
+      nb.disabled = true;
+      sb.rpc('wb_set_newsletter', { p_on: nb.checked }).then(function (r) {
+        nb.disabled = false;
+        if (r.error) { nb.checked = !nb.checked; return msg(nm, false, niceErr(r.error)); }
+        msg(nm, true, nb.checked ? 'You\'re on the list. See you Thursday.' : 'Done, no more woolmer emails.');
+      });
+    });
+    document.getElementById('pf-sync').onclick = function () {
+      var m = document.getElementById('pf-sync-msg'); msg(m, true, 'Syncing…');
+      WB.syncSaves().then(function (ok) { msg(m, !!ok, ok ? 'All synced.' : 'Couldn\'t sync just now. Try again in a minute.'); });
+    };
+    document.getElementById('pf-del').onclick = function () {
+      var m = document.getElementById('pf-del-msg');
+      if (!confirm('Delete your woolmer profile, saves, reviews, questions and answers for good? This can\'t be undone.')) return;
+      sb.rpc('wb_delete_me').then(function (r) {
+        if (r.error) return msg(m, false, niceErr(r.error));
+        try { ['wb_saved', 'wb_saved_ev', 'wb_saved_base', 'wb_saved_ev_base'].forEach(function (k) { localStorage.removeItem(k); }); } catch (x) {}
+        sb.auth.signOut().then(function () { html('<h2>All done</h2><p>Your woolmer data has been deleted.</p><a class="btn btn-navy" href="/">Home</a>'); });
+      });
+    };
   }
 
   function ownerPanel(id) {

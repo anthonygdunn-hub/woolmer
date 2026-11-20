@@ -80,6 +80,7 @@ function evCard(e, bySlug) {
   return `<article class="ev" data-start="${esc(e.starts_at)}" data-end="${esc(evEnd(e).toISOString())}" data-day="${evShowDay(e)}">
   <div class="ev-date"><span>${fmt(evShowDay(e) + 'T12:00:00Z', { weekday: 'short' })}</span><b>${fmt(evShowDay(e) + 'T12:00:00Z', { day: 'numeric' })}</b><span>${fmt(evShowDay(e) + 'T12:00:00Z', { month: 'short' })}</span></div>
   <div class="ev-body"><p class="ev-when"><span class="ev-flag" hidden></span>${evRunning(e) ? 'On until ' + fmt(evEnd(e), { weekday: 'short', day: 'numeric', month: 'short' }) : evTime(e)}${e.kind ? ` · ${esc(e.kind)}` : ''}</p><h3><a href="${evPath(e)}">${esc(e.title)}</a></h3>${evTagsHtml(e)}${venue ? `<p class="ev-venue">${venue}</p>` : ''}${e.details ? `<p class="ev-det">${esc(e.details)}</p>` : ''}${e.price ? `<p class="ev-price">${esc(e.price)}</p>` : ''}</div>
+  <button class="ev-save" type="button" data-save-ev="${esc(e.id)}" aria-pressed="false" aria-label="Save ${esc(e.title)}">♡</button>
 </article>`;
 }
 
@@ -213,12 +214,13 @@ ${jsonld ? `<script type="application/ld+json">${JSON.stringify(jsonld).replace(
     <a class="logo" href="/" aria-label="woolmer home">${TREE()}<b>woolmer</b><small>the W&amp;B guide</small></a>
     <nav class="nav" id="nav" aria-label="Main">${NAV.filter(([, h]) => REV || h !== "/ask/").map(([t, h]) => `<a href="${h}"${p.startsWith(h) ? ' aria-current="page"' : ''}>${esc(t)}</a>`).join('')}</nav>
     <div class="h-actions">
-      <a class="btn btn-ghost btn-sm" href="/account/">Sign in</a>
+      <a class="btn btn-ghost btn-sm" href="/account/" data-acct>Sign in</a>
       <a class="btn btn-navy btn-sm" href="/business/">List your business</a>
       <button class="menu-btn" type="button" aria-label="Menu" aria-controls="nav" aria-expanded="false"><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M3 5h12M3 9h12M3 13h12" stroke="#0C243C" stroke-width="1.8" stroke-linecap="round"/></svg></button>
     </div>
   </div>
 </header>
+<script>(function(){try{var t=JSON.parse(localStorage.getItem(${JSON.stringify('sb-' + new URL(SB_URL).hostname.split('.')[0] + '-auth-token')})||'null');if(!t||!t.user)return;document.documentElement.classList.add('signed-in');var a=document.querySelector('[data-acct]');if(a){a.textContent='My profile';a.setAttribute('aria-label','My profile');}}catch(e){}})();</script>
 <div class="evstrip" id="evstrip" hidden></div>
 <main id="main">
 ${body}
@@ -242,10 +244,11 @@ ${p.startsWith('/p/') || p.startsWith('/admin') || p.startsWith('/account') ? ''
 </footer>
 <script>window.WB={url:${JSON.stringify(SB_URL)},key:${JSON.stringify(SB_KEY)}};</script>
 <div class="install" id="install" hidden><span class="ico">${TREE(22)}</span><p>Get the free woolmer app on your phone.</p><button class="btn btn-fountain btn-sm" type="button" data-install hidden>Install</button><button class="x" type="button" data-close aria-label="Not now">×</button></div>
-<nav class="tabbar" aria-label="App">${TABS.map(([t, h, ic]) => `<a href="${h}"${(h === '/' ? p === '/' : p.startsWith(h)) ? ' aria-current="page"' : ''}>${TAB_ICONS[ic]}<span>${t}</span></a>`).join('')}</nav>
+<nav class="tabbar" aria-label="App">${TABS.map(([t, h, ic]) => `<a href="${h}"${(h === '/' ? p === '/' : p.startsWith(h)) ? ' aria-current="page"' : ''}>${TAB_ICONS[ic]}<span${h === '/account/' ? ' data-acct-tab' : ''}>${t}</span></a>`).join('')}</nav>
 <script src="/assets/site.js" defer></script>
 <script src="/assets/app.js" defer></script>
 <script src="/assets/events.js" defer></script>
+<script>if(document.documentElement.classList.contains('signed-in'))document.querySelectorAll('[data-acct-tab]').forEach(function(x){x.textContent='Profile';});</script>
 ${scripts}
 </body>
 </html>`;
@@ -641,7 +644,7 @@ ${groups.map(([c, l]) => `<section class="sec" style="padding-bottom:0"><div cla
       ${e.price ? `<div><dt>Price</dt><dd>${esc(e.price)}</dd></div>` : ''}
     </dl>
     ${e.details ? `<p class="evp-det">${esc(e.details)}</p>` : ''}
-    <div class="evp-acts">${e.url ? `<a class="btn btn-navy" href="${esc(e.url)}" rel="nofollow noopener" target="_blank">${tl.includes('book') || /£/.test(e.price || '') ? 'Tickets and details' : 'More details'}</a>` : ''}<a class="btn btn-ghost" href="event.ics" download>Add to calendar</a><a class="btn btn-ghost" href="${esc(dirs)}" rel="noopener" target="_blank">Directions</a><button class="btn btn-ghost" type="button" data-share>Share</button></div>
+    <div class="evp-acts">${e.url ? `<a class="btn btn-navy" href="${esc(e.url)}" rel="nofollow noopener" target="_blank">${tl.includes('book') || /£/.test(e.price || '') ? 'Tickets and details' : 'More details'}</a>` : ''}<button class="btn btn-ghost" type="button" data-save-ev="${esc(e.id)}" aria-pressed="false">♡ Save</button><a class="btn btn-ghost" href="event.ics" download>Add to calendar</a><a class="btn btn-ghost" href="${esc(dirs)}" rel="noopener" target="_blank">Directions</a><button class="btn btn-ghost" type="button" data-share>Share</button></div>
     <p class="muted" style="font-size:13px;margin-top:18px">Details can change, so check with the organiser before you set off. Running this event? <a href="mailto:info@woolmer.info?subject=${encodeURIComponent('Event: ' + e.title)}">Tell us about changes</a>.</p>
     ${suMini('event')}
   </div>
@@ -720,9 +723,9 @@ ${groups.map(([c, l]) => `<section class="sec" style="padding-bottom:0"><div cla
 <section class="sec" style="padding-top:28px"><div class="wrap narrow"><div class="panel" id="app" data-view="claim"><p class="muted">Loading…</p></div></div></section>`,
   });
   files['account/index.html'] = page({
-    title: 'Your woolmer account', desc: 'Sign in to woolmer.', path: '/account/', noindex: true,
+    title: 'Your woolmer profile', desc: 'Sign in to woolmer.', path: '/account/', noindex: true,
     scripts: SBJS + '<script src="/assets/account.js" defer></script>',
-    body: `<section class="ph dk"><div class="wrap"><h1>Your account</h1><p>Sign in with a link sent to your email. No passwords.</p></div></section>
+    body: `<section class="ph dk"><div class="wrap"><h1 data-acct-h>Your profile</h1><p data-acct-p>Sign in with a link sent to your email. No passwords.</p></div></section>
 <section class="sec" style="padding-top:28px"><div class="wrap narrow"><div class="panel" id="app" data-view="account"><p class="muted">Loading…</p></div></div></section>`,
   });
 
@@ -743,8 +746,9 @@ ${groups.map(([c, l]) => `<section class="sec" style="padding-bottom:0"><div cla
   sitemap.push('/near/');
   files['saved/index.html'] = page({
     title: 'Saved — woolmer', desc: 'Your saved places on woolmer.', path: '/saved/', noindex: true,
-    body: `<section class="ph dk"><div class="wrap"><h1>Saved</h1><p>Places you've saved. They stay on this phone, and work without signal.</p></div></section>
-<section class="sec" style="padding-top:24px"><div class="wrap"><div class="grid" id="saved-list"></div>
+    body: `<section class="ph dk"><div class="wrap"><h1>Saved</h1><p>Places and events you've saved. They work without signal, and <a href="/account/" style="color:#fff">sign in</a> to keep them on every device.</p></div></section>
+<section class="sec" style="padding-top:24px"><div class="wrap"><h2 class="wo-h" style="font-size:22px">Places</h2><div class="grid" id="saved-list"></div>
+<h2 class="wo-h" style="font-size:22px;margin-top:28px">Events</h2><div class="evs" id="saved-ev"></div>
 <div class="panel" id="alerts" style="margin-top:28px;max-width:640px"><h2 style="font-size:22px">Local alerts</h2><p class="muted" style="margin:8px 0 14px">The odd alert worth having: new places opening, local events and offers from Whitehill &amp; Bordon businesses. No more than one or two a week.</p><button class="btn btn-navy btn-sm" type="button">Turn alerts on</button><p class="msg" role="status" aria-live="polite" style="margin:10px 0 0"></p></div>
 </div></section>`,
   });

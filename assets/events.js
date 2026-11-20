@@ -6,6 +6,9 @@
   var homeList = document.getElementById('wo-list');
   var allList = document.getElementById('wo-all');
   if (/^\/(admin|claim)\//.test(location.pathname)) return;
+  // shared with the Saved page and the profile
+  WB.evCard = function (e) { return card(e); };
+  WB.evCols = 'id,title,place_id,venue,starts_at,ends_at,details,price,url,kind,lat,lng,town,tags,wb_places(slug,name,lat,lng)';
 
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function f(d, o) { o.timeZone = TZ; return new Intl.DateTimeFormat('en-GB', o).format(new Date(d)); }
@@ -56,7 +59,7 @@
       '<div class="ev-body"><p class="ev-when">' + (fl ? '<span class="ev-flag">' + fl + '</span>' : '') + far + (running(e) ? until(e) : when(e)) + (e.kind ? ' · ' + esc(e.kind) : '') + '</p>' +
       '<h3><a href="' + path(e) + '">' + esc(e.title) + '</a></h3>' + tagsHtml(e) +
       (venue ? '<p class="ev-venue">' + venue + '</p>' : '') + (e.details ? '<p class="ev-det">' + esc(e.details) + '</p>' : '') + (e.price ? '<p class="ev-price">' + esc(e.price) + '</p>' : '') +
-      '</div></article>';
+      '</div><button class="ev-save" type="button" data-save-ev="' + esc(e.id) + '" aria-pressed="false" aria-label="Save ' + esc(e.title) + '">♡</button></article>';
   }
 
   function load() {
@@ -153,6 +156,6 @@
     apply(cur);
   }
 
-  function go() { var P = load(); window.WB = window.WB || {}; WB.eventsP = P; P.then(function (evs) { var near = evs.filter(local); renderStrip(near); renderHome(near); renderAll(evs); }); }
+  function go() { var P = load(); window.WB = window.WB || {}; WB.eventsP = P; P.then(function (evs) { var near = evs.filter(local); renderStrip(near); renderHome(near); renderAll(evs); if (WB.paintSaves) WB.paintSaves(); }); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go); else go();
 })();

@@ -540,3 +540,33 @@ aside .su-mini{margin-top:0}
 .ty-tog{margin:0 0 12px;align-items:center}
 .ty-count{font-size:14px;color:var(--mu);margin-left:6px}
 .card[hidden]{display:none}
+
+/* ---- saved events + profile */
+.ev{position:relative}
+.ev-body{padding-right:34px}
+.ev-save{position:absolute;top:10px;right:10px;width:34px;height:34px;border-radius:50%;border:1px solid var(--ln);background:var(--card);color:var(--mu);font-size:18px;line-height:1;cursor:pointer;display:grid;place-items:center;transition:transform .15s,color .2s,background .2s}
+.ev-save:active{transform:scale(.9)}
+.ev-save[aria-pressed="true"]{color:#fff;background:var(--orange);border-color:var(--orange)}
+.btn-ghost[data-save-ev][aria-pressed="true"]{background:var(--orange);border-color:var(--orange);color:var(--navy)}
+.pf-head{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.pf-head h2{margin:0}
+.pf-head p{margin:2px 0 0;font-size:14px}
+.pf-head .btn{margin-left:auto}
+.pf-av{width:52px;height:52px;border-radius:50%;background:var(--navy);color:var(--orange);display:grid;place-items:center;font:600 24px 'Inter Tight',Inter,sans-serif;flex:none}
+.pf-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:20px 0}
+.pf-stats div{background:var(--page);border:1px solid var(--ln);border-radius:14px;padding:12px;text-align:center}
+.pf-stats b{display:block;font:600 24px 'Inter Tight',Inter,sans-serif;color:var(--navy)}
+.pf-stats span{font-size:12px;color:var(--mu)}
+.pf-tabs{display:flex;gap:6px;border-bottom:1px solid var(--ln);margin:0 0 20px;overflow-x:auto}
+.pf-tabs button{background:none;border:0;border-bottom:3px solid transparent;padding:10px 12px;font:600 15px Inter,sans-serif;color:var(--mu);cursor:pointer;white-space:nowrap}
+.pf-tabs button[aria-selected="true"]{color:var(--navy);border-bottom-color:var(--orange)}
+.pf-grid{grid-template-columns:repeat(auto-fill,minmax(200px,1fr))}
+.pf-item{border:1px solid var(--ln);border-radius:14px;padding:14px;margin:10px 0;background:var(--page)}
+.pf-item p{margin:4px 0}
+.pf-row{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}
+.st{font-size:12px;font-weight:600;padding:3px 9px;border-radius:999px}
+.st-wait{background:#FFF1E6;color:#8A3A08}
+.st-live{background:#E3F6F6;color:#0E5E5F}
+.st-no{background:#EEF1F3;color:#4A5865}
+.pf-danger h3{color:#A12C2C}
+@media (max-width:640px){.pf-stats{grid-template-columns:repeat(2,1fr)}}

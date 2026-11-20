@@ -69,6 +69,7 @@
       chips.forEach(function (x) { x.setAttribute('aria-pressed', String(x.dataset.area === F.area)); });
       tys.forEach(function (x) { x.setAttribute('aria-pressed', String(!!F.types[x.dataset.type])); });
       togs.forEach(function (x) { x.setAttribute('aria-pressed', String(!!F.only[x.dataset.only])); });
+      if (WB.syncMap) WB.syncMap();
       if (cnt) cnt.textContent = (ts.length || Object.keys(F.only).length || F.area) ? n + (n === 1 ? ' place' : ' places') : '';
       try {
         var u = new URL(location.href);
@@ -94,9 +95,20 @@
     var m = L.map(el, { scrollWheelZoom: false });
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap contributors' }).addTo(m);
     var icon = L.divIcon({ className: '', html: '<div style="width:22px;height:22px;border-radius:50%;background:#FF862F;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.3)"></div>', iconSize: [22, 22], iconAnchor: [11, 11] });
-    var b = [];
-    pins.forEach(function (p) { L.marker([p.lat, p.lng], { icon: icon, title: p.n }).addTo(m).bindPopup('<a href="/p/' + p.s + '/">' + WB.esc(p.n) + '</a>'); b.push([p.lat, p.lng]); });
-    if (b.length === 1) m.setView(b[0], 16); else m.fitBounds(b, { padding: [30, 30] });
+    var marks = pins.map(function (p) { return { s: p.s, ll: [p.lat, p.lng], mk: L.marker([p.lat, p.lng], { icon: icon, title: p.n }).bindPopup('<a href="/p/' + p.s + '/">' + WB.esc(p.n) + '</a>') }; });
+    var fit = function (b) { if (!b.length) return; if (b.length === 1) m.setView(b[0], 16); else m.fitBounds(b, { padding: [30, 30], maxZoom: 16 }); };
+    var lst = document.getElementById('list');
+    // on category pages the map only shows the places the filters leave visible
+    WB.syncMap = function () {
+      var b = [];
+      marks.forEach(function (x) {
+        var card = lst && lst.querySelector('.card[data-slug="' + x.s + '"]');
+        var show = !card || !card.hidden;
+        if (show) { if (!m.hasLayer(x.mk)) x.mk.addTo(m); b.push(x.ll); } else if (m.hasLayer(x.mk)) m.removeLayer(x.mk);
+      });
+      fit(b);
+    };
+    WB.syncMap();
   }
   if (document.getElementById('map')) { if (window.L) maps(); else window.addEventListener('load', maps); }
 

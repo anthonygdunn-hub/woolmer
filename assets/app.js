@@ -60,23 +60,106 @@
     return on(d) || on(y, true);
   };
 
-  // ---------------------------------------------------------------- saved places
-  WB.saved = function () { return store.get('wb_saved', []); };
-  WB.isSaved = function (slug) { return WB.saved().indexOf(slug) > -1; };
-  WB.toggleSaved = function (slug) {
-    var s = WB.saved(), i = s.indexOf(slug);
-    if (i > -1) s.splice(i, 1); else s.unshift(slug);
-    store.set('wb_saved', s.slice(0, 200)); return i === -1;
+  // ---------------------------------------------------------------- saved places and events
+  // Saves live on the phone (works offline). When signed in they also sync to the account (wb_saves),
+  // with a last-synced copy per user so a removal on one device isn't put back by another.
+  var LK = { place: 'wb_saved', event: 'wb_saved_ev' };
+  WB.saved = function (kind) { return store.get(LK[kind || 'place'], []); };
+  WB.isSaved = function (ref, kind) { return WB.saved(kind).indexOf(String(ref)) > -1; };
+  var SKEY = 'sb-' + String(WB.url || '').replace(/^https?:\/\/([^.]+).*$/, '$1') + '-auth-token';
+  WB.session = function () { var t = store.get(SKEY, null); return t && t.user ? t : null; };
+  var sbP = null;
+  WB.authClient = function () {
+    if (!WB.session()) return Promise.resolve(null);
+    return sbP || (sbP = new Promise(function (res) {
+      if (window.supabase) return res();
+      var waitFor = function (n) { if (window.supabase || n > 100) return res(); setTimeout(function () { waitFor(n + 1); }, 100); };
+      if (document.querySelector('script[src*="supabase-js"]')) return waitFor(0);
+      var sc = document.createElement('script'); sc.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js';
+      sc.onload = res; sc.onerror = function () { res(); }; document.head.appendChild(sc);
+    }).then(function () {
+      if (!window.supabase || !WB.client) return null;
+      var sb = WB.client();
+      return sb.auth.getSession().then(function (r) { return r.data.session ? sb : null; });
+    }).catch(function () { return null; }));
   };
-  var paintSave = function (b) {
-    var on = WB.isSaved(b.dataset.save);
-    b.setAttribute('aria-pressed', String(on));
-    b.innerHTML = (on ? '♥ Saved' : '♡ Save');
+  var base = function (kind, uid) { var b = store.get(LK[kind] + '_base', null); return b && b.u === uid ? b.refs : null; };
+  var setBase = function (kind, uid, refs) { store.set(LK[kind] + '_base', { u: uid, refs: refs }); };
+  var pushOne = function (kind, ref, on) {
+    WB.authClient().then(function (sb) {
+      if (!sb) return;
+      var uid = WB.session().user.id;
+      var q = on ? sb.from('wb_saves').upsert({ user_id: uid, kind: kind, ref: ref }, { onConflict: 'user_id,kind,ref', ignoreDuplicates: true })
+        : sb.from('wb_saves').delete().eq('kind', kind).eq('ref', ref);
+      q.then(function (r) {
+        if (r.error) return;
+        var b = base(kind, uid); if (!b) return;
+        var i = b.indexOf(ref); if (on && i < 0) b.push(ref); if (!on && i > -1) b.splice(i, 1);
+        setBase(kind, uid, b);
+      });
+    });
   };
-  document.querySelectorAll('[data-save]').forEach(function (b) {
-    paintSave(b);
-    b.addEventListener('click', function () { WB.toggleSaved(b.dataset.save); paintSave(b); });
+  WB.toggleSaved = function (ref, kind) {
+    kind = kind || 'place'; ref = String(ref);
+    var s = WB.saved(kind), i = s.indexOf(ref);
+    if (i > -1) s.splice(i, 1); else s.unshift(ref);
+    store.set(LK[kind], s.slice(0, 300));
+    pushOne(kind, ref, i === -1);
+    return i === -1;
+  };
+  var syncKind = function (sb, uid, kind) {
+    return sb.from('wb_saves').select('ref,created_at').eq('kind', kind).order('created_at', { ascending: false }).then(function (r) {
+      if (r.error) return;
+      var server = (r.data || []).map(function (x) { return x.ref; }), local = WB.saved(kind), b = base(kind, uid);
+      var out = [], add = [], del = [];
+      local.forEach(function (x) {
+        if (server.indexOf(x) > -1) out.push(x);
+        else if (!b || b.indexOf(x) < 0) { out.push(x); add.push(x); }   // new on this device
+      });                                                              // else: removed on another device
+      server.forEach(function (x) {
+        if (local.indexOf(x) > -1) return;
+        if (b && b.indexOf(x) > -1) del.push(x); else out.push(x);       // removed here, or new from elsewhere
+      });
+      var jobs = [];
+      if (add.length) jobs.push(sb.from('wb_saves').upsert(add.map(function (x) { return { user_id: uid, kind: kind, ref: x }; }), { onConflict: 'user_id,kind,ref', ignoreDuplicates: true }));
+      if (del.length) jobs.push(sb.from('wb_saves').delete().eq('kind', kind).in('ref', del));
+      return Promise.all(jobs).then(function (res) {
+        store.set(LK[kind], out.slice(0, 300));
+        if (res.every(function (x) { return !x.error; })) setBase(kind, uid, out.slice());
+      });
+    });
+  };
+  WB.syncSaves = function () {
+    return WB.authClient().then(function (sb) {
+      if (!sb) return false;
+      var uid = WB.session().user.id;
+      return Promise.all([syncKind(sb, uid, 'place'), syncKind(sb, uid, 'event')]).then(function () {
+        WB.paintSaves(); document.dispatchEvent(new CustomEvent('wb:saves')); return true;
+      });
+    });
+  };
+  WB.paintSaves = function () {
+    document.querySelectorAll('[data-save]').forEach(function (b) {
+      var on = WB.isSaved(b.dataset.save, 'place'); b.setAttribute('aria-pressed', String(on)); b.innerHTML = on ? '♥ Saved' : '♡ Save';
+    });
+    document.querySelectorAll('[data-save-ev]').forEach(function (b) {
+      var on = WB.isSaved(b.dataset.saveEv, 'event'); b.setAttribute('aria-pressed', String(on));
+      if (b.classList.contains('ev-save')) b.textContent = on ? '♥' : '♡'; else b.innerHTML = on ? '♥ Saved' : '♡ Save';
+    });
+  };
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('[data-save],[data-save-ev]'); if (!b) return;
+    e.preventDefault();
+    if (b.dataset.save) WB.toggleSaved(b.dataset.save, 'place'); else WB.toggleSaved(b.dataset.saveEv, 'event');
+    WB.paintSaves();
+    if (!WB.session() && !store.get('wb_save_tip', 0)) {
+      store.set('wb_save_tip', 1);
+      var tn = document.createElement('div'); tn.className = 'me-toast'; tn.innerHTML = 'Saved on this phone. <a href="/account/" style="color:inherit;text-decoration:underline">Sign in</a> to keep it on every device.';
+      document.body.appendChild(tn); setTimeout(function () { tn.remove(); }, 5000);
+    }
   });
+  WB.paintSaves();
+  if (WB.session()) WB.syncSaves();
 
   // ---------------------------------------------------------------- places data and cards
   var placesP = null;
@@ -142,15 +225,29 @@
     });
   }
 
-  // ---------------------------------------------------------------- Saved page
-  var savedEl = document.getElementById('saved-list');
-  if (savedEl) {
-    WB.places().then(function (d) {
+  // ---------------------------------------------------------------- Saved page (also used by the profile)
+  WB.renderSavedPlaces = function (el) {
+    return WB.places().then(function (d) {
       var by = {}; d.forEach(function (p) { by[p.s] = p; });
-      var list = WB.saved().map(function (s) { return by[s]; }).filter(Boolean);
-      savedEl.innerHTML = list.length ? list.map(function (p) { return WB.appCard(p); }).join('')
-        : '<div class="panel" style="grid-column:1/-1"><h2 style="font-size:22px">Nothing saved yet</h2><p class="muted" style="margin:8px 0 0">Tap ♡ Save on any place and it\'ll be here, even when you\'ve got no signal.</p></div>';
+      var list = WB.saved('place').map(function (s) { return by[s]; }).filter(Boolean);
+      el.innerHTML = list.length ? list.map(function (p) { return WB.appCard(p); }).join('')
+        : '<div class="panel" style="grid-column:1/-1"><h3 style="font-size:20px;margin:0">Nothing saved yet</h3><p class="muted" style="margin:8px 0 0">Tap ♡ Save on any takeaway, pub or shop and it\'ll be here, even when you\'ve got no signal.</p></div>';
     });
+  };
+  WB.renderSavedEvents = function (el) {
+    var ids = WB.saved('event').filter(function (x) { return /^[0-9a-f-]{36}$/i.test(x); });
+    if (!ids.length) { el.innerHTML = '<p class="muted">No events saved yet. Tap ♡ on anything in <a href="/whats-on/">What\'s on</a>.</p>'; return Promise.resolve(); }
+    return WB.rest('wb_events?select=' + (WB.evCols || 'id,title,venue,starts_at,ends_at,details,price,kind,town,tags,wb_places(slug,name,lat,lng)') + '&id=in.(' + ids.join(',') + ')&order=starts_at').then(function (rows) {
+      var now = Date.now(), up = [], past = 0;
+      (rows || []).forEach(function (e) { e.place = e.wb_places || null; delete e.wb_places; var end = e.ends_at ? +new Date(e.ends_at) : +new Date(e.starts_at) + 3 * 36e5; if (end > now) up.push(e); else past++; });
+      el.innerHTML = (up.length && WB.evCard ? up.map(WB.evCard).join('') : '<p class="muted">Nothing coming up from your saved events.</p>') + (past ? '<p class="muted" style="font-size:13px">' + past + ' saved ' + (past === 1 ? 'event has' : 'events have') + ' finished.</p>' : '');
+      WB.paintSaves();
+    }).catch(function () { el.innerHTML = '<p class="muted">Couldn\'t load your events just now.</p>'; });
+  };
+  var savedEl = document.getElementById('saved-list'), savedEv = document.getElementById('saved-ev');
+  if (savedEl) {
+    var paintSaved = function () { WB.renderSavedPlaces(savedEl); if (savedEv) WB.renderSavedEvents(savedEv); };
+    paintSaved(); document.addEventListener('wb:saves', paintSaved);
   }
 
   // ---------------------------------------------------------------- alerts
