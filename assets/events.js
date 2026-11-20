@@ -118,7 +118,7 @@
       var qs = new URLSearchParams(location.search), qm = +qs.get('miles');
       if ([5, 10, 15, 20, 25, 30].indexOf(qm) >= 0) dist = qm;
       (qs.get('only') || '').split(',').forEach(function (t) { if (t === 'free' || t === 'kids') only[t] = 1; });
-      if (['today', 'weekend', 'week'].indexOf(qs.get('when')) >= 0) cur = qs.get('when');
+      if (['today', 'weekend', 'week', 'd15', 'd30', 'd60'].indexOf(qs.get('when')) >= 0) cur = qs.get('when');
     } catch (x) {}
     var apply = function (k) {
       k = k || cur; cur = k;
@@ -126,7 +126,7 @@
       var fri = day(new Date(now.getTime() + Math.max(0, 4 - wd) * 864e5)), sun = day(new Date(now.getTime() + (6 - wd) * 864e5));
       var wk = day(new Date(now.getTime() + 6 * 864e5)), shown = 0;
       allList.querySelectorAll('.wo-day').forEach(function (el) {
-        var d = el.dataset.day, ok = k === 'all' || (k === 'today' && d === today) || (k === 'week' && d <= wk) || (k === 'weekend' && d >= fri && d <= sun);
+        var d = el.dataset.day, ok = k === 'all' || (k === 'today' && d === today) || (k === 'week' && d <= wk) || (/^d\d+$/.test(k) && d <= day(new Date(now.getTime() + (+k.slice(1) - 1) * 864e5))) || (k === 'weekend' && d >= fri && d <= sun);
         var any = 0;
         el.querySelectorAll('.ev').forEach(function (c) { var tg = (c.dataset.tags || '').split(' '), v = ok && +c.dataset.mi <= dist && Object.keys(only).every(function (t) { return tg.indexOf(t) >= 0; }); c.hidden = !v; if (v) any++; });
         el.hidden = !any; if (any) shown++;
