@@ -60,13 +60,23 @@
   }
 
   function load() {
+    // other pages only need the next few weeks for the strip and home list, and reuse it for 10 minutes
+    var scope = allList ? 'all' : homeList ? 'home' : 'strip', key = 'wb_ev_' + scope;
+    try { var c = JSON.parse(sessionStorage.getItem(key) || 'null'); if (c && Date.now() - c.t < 6e5) return Promise.resolve(c.rows.filter(function (e) { return end(e) > now; })); } catch (x) {}
     var cols = 'id,title,place_id,venue,starts_at,ends_at,details,price,url,kind,lat,lng,town,tags,wb_places(slug,name,lat,lng)';
     var since = new Date(Date.now() - 864e5).toISOString();
-    var live = WB.url ? fetch(WB.url + '/rest/v1/wb_events?select=' + cols + '&published=eq.true&or=(starts_at.gte.' + encodeURIComponent(since) + ',ends_at.gte.' + encodeURIComponent(now.toISOString()) + ')' + '&order=starts_at&limit=1000', { headers: { apikey: WB.key, Authorization: 'Bearer ' + WB.key } })
+    var cap = scope === 'all' ? '' : '&starts_at=lt.' + encodeURIComponent(new Date(Date.now() + (scope === 'home' ? 45 : 8) * 864e5).toISOString());
+    var ctl = window.AbortController ? new AbortController() : null;
+    if (ctl) setTimeout(function () { ctl.abort(); }, 6000);
+    var live = WB.url ? fetch(WB.url + '/rest/v1/wb_events?select=' + cols + '&published=eq.true&or=(starts_at.gte.' + encodeURIComponent(since) + ',ends_at.gte.' + encodeURIComponent(now.toISOString()) + ')' + cap + '&order=starts_at&limit=1000', { headers: { apikey: WB.key, Authorization: 'Bearer ' + WB.key }, signal: ctl ? ctl.signal : undefined })
       .then(function (r) { if (!r.ok) throw r; return r.json(); })
       .then(function (rows) { return rows.map(function (e) { e.place = e.wb_places || null; delete e.wb_places; return e; }); }) : Promise.reject();
     return live.catch(function () { return fetch('/events.json').then(function (r) { return r.ok ? r.json() : []; }); })
-      .then(function (rows) { return (rows || []).filter(function (e) { return end(e) > now; }).sort(function (a, b) { return a.starts_at < b.starts_at ? -1 : 1; }); })
+      .then(function (rows) {
+        rows = (rows || []).filter(function (e) { return end(e) > now; }).sort(function (a, b) { return a.starts_at < b.starts_at ? -1 : 1; });
+        try { sessionStorage.setItem(key, JSON.stringify({ t: Date.now(), rows: rows })); } catch (x) {}
+        return rows;
+      })
       .catch(function () { return []; });
   }
 

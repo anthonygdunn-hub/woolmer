@@ -214,22 +214,20 @@
   function arm(root) {
     var groups = new Map();
     (root.querySelectorAll ? root : document).querySelectorAll(SEL).forEach(function (el) {
-      if (el.classList.contains('rv') || el.closest('.hero, .ph, .tabbar, .install, .evstrip')) return;
+      // long lists (What's on) skip the reveal: animating hundreds of cards slows older PCs
+      if (el.classList.contains('rv') || el.closest('.hero, .ph, .tabbar, .install, .evstrip, #wo-all')) return;
       var parent = el.parentElement, n = groups.get(parent) || 0;
       groups.set(parent, n + 1);
       el.style.setProperty('--d', Math.min(n, 8));
       el.classList.add('rv');
-      var r = el.getBoundingClientRect();
-      if (r.top < innerHeight * 0.92 && r.bottom > 0 && root === document) {
-        requestAnimationFrame(function () { requestAnimationFrame(function () { el.classList.add('in'); }); });
-      } else io.observe(el);
+      io.observe(el); // no layout reads here: the observer reports what is on screen without forcing reflows
     });
   }
   function start() {
     arm(document);
     // cards added later (search results, Near me, Saved)
     new MutationObserver(function (ms) {
-      ms.forEach(function (m) { m.addedNodes.forEach(function (n) { if (n.nodeType === 1 && n.parentElement) arm(n.parentElement); }); });
+      ms.forEach(function (m) { m.addedNodes.forEach(function (n) { if (n.nodeType === 1 && n.parentElement && !n.closest('#wo-all')) arm(n.parentElement); }); });
     }).observe(document.body, { childList: true, subtree: true });
     document.addEventListener('pointermove', function (e) {
       var c = e.target.closest && e.target.closest('.cat');

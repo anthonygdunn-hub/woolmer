@@ -34,11 +34,20 @@ self.addEventListener('fetch', (e) => {
     })));
     return;
   }
-  if (req.mode === 'navigate') {                                          // pages: network first
-    e.respondWith(fetch(req).then((res) => {
+  if (req.mode === 'navigate') {                                          // pages: network first, saved copy after 2.5s
+    const net = fetch(req).then((res) => {
       if (res.ok) { const copy = res.clone(); caches.open(VERSION).then((c) => c.put(url.pathname, copy)); }
       return res;
-    }).catch(() => caches.match(url.pathname).then((hit) => hit || caches.match('/offline/'))));
+    });
+    e.waitUntil(net.catch(() => {}));                                     // keep refreshing the saved copy
+    e.respondWith(new Promise((resolve) => {
+      let done = false;
+      const fin = (r) => { if (!done && r) { done = true; resolve(r); } };
+      const saved = () => caches.match(url.pathname);
+      const t = setTimeout(() => saved().then(fin), 2500);               // slow network: show the saved page
+      net.then((r) => { clearTimeout(t); fin(r); })
+        .catch(() => { clearTimeout(t); saved().then((h) => fin(h)).then(() => done || caches.match('/offline/').then(fin)); });
+    }));
     return;
   }
   e.respondWith(caches.match(req).then((hit) => hit || fetch(req).then((res) => {
