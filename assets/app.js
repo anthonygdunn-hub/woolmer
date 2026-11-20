@@ -256,7 +256,48 @@
     paintSaved(); document.addEventListener('wb:saves', paintSaved);
   }
 
-  // ---------------------------------------------------------------- alerts
+  // ---------------------------------------------------------------- listing: next / previous and more like this
+  var placeEl = document.getElementById('place'), pnav = document.getElementById('pnav'), pmore = document.getElementById('pmore');
+  if (placeEl && pnav && pmore) {
+    var me = placeEl.dataset.slug, k = placeEl.dataset.k, ty = []; try { ty = JSON.parse(placeEl.dataset.ty || '[]'); } catch (x) {}
+    var ctx = null; try { ctx = JSON.parse(sessionStorage.getItem('wb_ctx') || 'null'); } catch (x) {}
+    WB.places().then(function (d) {
+      var by = {}; d.forEach(function (p) { by[p.s] = p; });
+      var slugs, label, back;
+      if (ctx && ctx.slugs && ctx.slugs.indexOf(me) > -1 && ctx.slugs.length > 1) { slugs = ctx.slugs.filter(function (x) { return by[x]; }); label = ctx.label; back = ctx.back; }
+      else {
+        // arrived straight here: same food type if it has one, otherwise same category
+        var same = d.filter(function (p) { return p.k === k; });
+        var t = ty[0], typed = t ? same.filter(function (p) { return (p.y || []).indexOf(t[0]) > -1; }) : [];
+        var pool = typed.length > 1 ? typed : same;
+        slugs = pool.sort(function (a, b) { return a.n.replace(/^the\s+/i, '').localeCompare(b.n.replace(/^the\s+/i, '')); }).map(function (p) { return p.s; });
+        label = typed.length > 1 ? t[1] + ' ' + placeEl.dataset.cn.toLowerCase() : placeEl.dataset.cn;
+        back = '/' + k + '/' + (typed.length > 1 ? '?type=' + t[0] : '');
+      }
+      var i = slugs.indexOf(me); if (i < 0 || slugs.length < 2) return;
+      var prev = by[slugs[(i - 1 + slugs.length) % slugs.length]], next = by[slugs[(i + 1) % slugs.length]];
+      pnav.innerHTML = '<a class="pnav-b" href="/p/' + esc(prev.s) + '/" rel="prev" title="' + esc(prev.n) + '"><span aria-hidden="true">‹</span><span class="pnav-t"><small>Previous</small>' + esc(prev.n) + '</span></a>' +
+        '<a class="pnav-c" href="' + esc(back) + '">' + (i + 1) + ' of ' + slugs.length + '<small>' + esc(label) + '</small></a>' +
+        '<a class="pnav-b pnav-n" href="/p/' + esc(next.s) + '/" rel="next" title="' + esc(next.n) + '"><span class="pnav-t"><small>Next</small>' + esc(next.n) + '</span><span aria-hidden="true">›</span></a>';
+      pnav.hidden = false;
+      var items = slugs.map(function (s) { return by[s]; });
+      pmore.innerHTML = '<h2 style="font-size:20px">' + esc(label) + '</h2><ol class="pmore-l">' + items.map(function (p) {
+        var open = WB.openNow(p.o);
+        return '<li' + (p.s === me ? ' aria-current="page"' : '') + '><a href="/p/' + esc(p.s) + '/"><b>' + esc(p.n) + '</b><span>' + esc(p.a || '') +
+          (open === true ? ' · <i class="on">Open now</i>' : open === false ? ' · Closed now' : '') + '</span></a></li>';
+      }).join('') + '</ol><a class="pmore-back" href="' + esc(back) + '">See them all on the list</a>';
+      pmore.hidden = false;
+      var cur = pmore.querySelector('[aria-current]'), ol = pmore.querySelector('.pmore-l');
+      if (cur && ol.scrollHeight > ol.clientHeight) ol.scrollTop = cur.offsetTop - ol.offsetTop - 60;
+      // arrow keys on a keyboard
+      document.addEventListener('keydown', function (e) {
+        if (e.target.closest && e.target.closest('input,textarea,select,[contenteditable]')) return;
+        if (e.key === 'ArrowRight') location.href = '/p/' + next.s + '/'; else if (e.key === 'ArrowLeft') location.href = '/p/' + prev.s + '/';
+      });
+    });
+  }
+
+
   var alertsEl = document.getElementById('alerts');
   if (alertsEl) {
     var btn = alertsEl.querySelector('button'), msg = alertsEl.querySelector('.msg');

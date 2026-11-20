@@ -486,12 +486,13 @@ ${groups.map(([c, l]) => `<section class="sec" style="padding-bottom:0"><div cla
       scripts: (p.lat ? '<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin="" defer></script>' : '') + '<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js" defer></script><script src="/assets/place.js" defer></script>',
       body: `<section class="ph dk"><div class="wrap">
   <nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a> / ${c ? `<a href="/${c.slug}/">${esc(c.name)}</a>` : esc(p.category)} / ${esc(p.name)}</nav>
+  <div class="pnav" id="pnav" hidden></div>
   <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">${isFeatured(p) ? '<span class="badge badge-f">Featured</span>' : ''}${p.claimed ? '<span class="badge badge-v">Owner-verified listing</span>' : ''}<span id="open-now"></span></div>
   <h1>${esc(p.name)}</h1>
   <p>${esc([c ? c.name : p.category, addr].filter(Boolean).join(' · '))}</p>
   <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:20px">${p.phone ? `<a class="btn btn-fountain" href="tel:${esc(p.phone.replace(/\s+/g, ''))}">Call ${esc(p.phone)}</a>` : ''}<a class="btn btn-line" href="${esc(dirUrl)}" rel="noopener">Directions</a><button class="btn btn-line" type="button" data-save="${esc(p.slug)}" aria-pressed="false">♡ Save</button>${(() => { const menuLink = p.menu_url || (p.category === 'Takeaways' ? p.website : null); return (menuLink ? `<a class="btn btn-line" href="${esc(menuLink)}" rel="noopener nofollow" target="_blank">Menu &amp; order</a>` : '') + (p.website && (p.category === 'Takeaways' || p.website !== p.menu_url) ? `<a class="btn btn-line" href="${esc(p.website)}" rel="noopener nofollow" target="_blank">Website</a>` : ''); })()}</div>
 </div></section>
-<section class="sec" style="padding-top:28px"><div class="wrap"><div class="place-grid" id="place" data-id="${p.id}" data-slug="${esc(p.slug)}" data-name="${esc(p.name)}" ${hours ? `data-hours='${esc(JSON.stringify(hours))}'` : ''}>
+<section class="sec" style="padding-top:28px"><div class="wrap"><div class="place-grid" id="place" data-id="${p.id}" data-slug="${esc(p.slug)}" data-name="${esc(p.name)}" data-k="${esc(c ? c.slug : '')}" data-cn="${esc(c ? c.name : p.category)}" data-ty="${esc(JSON.stringify(placeTypes(p).map(k => [k, TAKEAWAY_TYPES.find(t => t[0] === k)[1]])))}" ${hours ? `data-hours='${esc(JSON.stringify(hours))}'` : ''}>
   <div class="place-main">
     <div id="deal-slot"></div>
     ${photo1(p) ? `<figure class="place-photo"><img src="${esc(photo1(p).src)}" alt="${esc(photo1(p).alt || p.name)}"><figcaption>${photo1(p).link ? `<a href="${esc(photo1(p).link)}" rel="nofollow noopener" target="_blank">Photo</a>` : 'Photo'}${photo1(p).credit ? ' by ' + esc(photo1(p).credit) : ''}${photo1(p).lic ? ', ' + esc(photo1(p).lic) : ''}</figcaption></figure>` : ''}
@@ -501,6 +502,7 @@ ${groups.map(([c, l]) => `<section class="sec" style="padding-bottom:0"><div cla
     <div class="panel" id="questions"><h2>Questions</h2><div id="q-list"><p class="muted">Loading…</p></div><div id="q-cta"></div></div>
   </div>
   <aside class="place-side">
+    <div class="panel pmore" id="pmore" hidden></div>
     ${hours ? `<div class="panel"><h2 style="font-size:22px">Opening hours</h2><table class="hours"><tbody>${DAYS.map(([k, d]) => `<tr data-day="${k}"><td>${d}</td><td>${esc(hours[k] || 'Closed')}</td></tr>`).join('')}</tbody></table></div>` : ''}
     <div class="panel"><div class="facts">
       ${addr ? `<div><strong>Address</strong><br>${esc(addr)}</div>` : ''}
@@ -663,7 +665,7 @@ ${groups.map(([c, l]) => `<section class="sec" style="padding-bottom:0"><div cla
     body: `<section class="ph dk"><div class="wrap"><h1>Search</h1><form class="search" role="search" style="margin-top:20px" id="s-form"><label class="sr" for="s-q">Search woolmer</label><input id="s-q" name="q" type="search" placeholder="Name, type of food or village" autocomplete="off"><button class="btn btn-fountain" type="submit">Search</button></form></div></section>
 <section class="sec" style="padding-top:28px"><div class="wrap"><p class="muted" id="s-count" aria-live="polite"></p><div class="grid" id="s-results"></div></div></section>`,
   });
-  files['places.json'] = JSON.stringify(places.map(p => ({ s: p.slug, n: p.name, c: p.category, a: p.area || '', t: (p.tags || []).join(' '), d: (p.description || '').slice(0, 160), h: p.hygiene_rating, f: isFeatured(p) ? 1 : 0, v: p.claimed ? 1 : 0, la: p.lat ? +(+p.lat).toFixed(5) : undefined, lo: p.lng ? +(+p.lng).toFixed(5) : undefined, o: p.hours && Object.values(p.hours).some(v => v && !/closed/i.test(v)) ? p.hours : undefined, ph: photo1(p) ? photo1(p).src : undefined, k: catBySlug[p.category] ? catBySlug[p.category].slug : undefined })));
+  files['places.json'] = JSON.stringify(places.map(p => ({ s: p.slug, n: p.name, c: p.category, a: p.area || '', t: (p.tags || []).join(' '), d: (p.description || '').slice(0, 160), h: p.hygiene_rating, f: isFeatured(p) ? 1 : 0, v: p.claimed ? 1 : 0, la: p.lat ? +(+p.lat).toFixed(5) : undefined, lo: p.lng ? +(+p.lng).toFixed(5) : undefined, o: p.hours && Object.values(p.hours).some(v => v && !/closed/i.test(v)) ? p.hours : undefined, ph: photo1(p) ? photo1(p).src : undefined, k: catBySlug[p.category] ? catBySlug[p.category].slug : undefined, y: placeTypes(p).length ? placeTypes(p) : undefined })));
 
   // add your business
   sitemap.push('/add/');

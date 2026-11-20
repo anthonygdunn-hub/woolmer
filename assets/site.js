@@ -93,6 +93,14 @@
         if (F.area) u.searchParams.set('area', F.area);
         history.replaceState(null, '', u);
       } catch (x) {}
+      // remember what's showing, so a listing can offer next / previous and "more like this"
+      try {
+        var cat = (document.querySelector('.ph h1') || {}).textContent || '';
+        var tl = ts.map(function (t) { var b = document.querySelector('.ty[data-type="' + t + '"] .ty-l'); return b ? b.textContent : t; });
+        var label = (tl.length ? tl.join(' & ') + ' ' + cat.toLowerCase() : cat) + (F.area ? ' in ' + F.area : '') + (F.only.open ? ', open now' : '');
+        var slugs = [].map.call(list.querySelectorAll('.card:not([hidden])'), function (c) { return c.dataset.slug; }).filter(Boolean);
+        sessionStorage.setItem('wb_ctx', JSON.stringify({ label: label.trim(), back: location.pathname + location.search, slugs: slugs.filter(function (x, i) { return slugs.indexOf(x) === i; }) }));
+      } catch (x) {}
     };
     chips.forEach(function (c) { c.addEventListener('click', function () { F.area = c.dataset.area; run(); }); });
     tys.forEach(function (c) { c.addEventListener('click', function () { var t = c.dataset.type; if (F.types[t]) delete F.types[t]; else F.types[t] = 1; run(); }); });

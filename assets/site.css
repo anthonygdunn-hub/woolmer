@@ -585,3 +585,27 @@ aside .su-mini{margin-top:0}
 .pf-av-lg{width:88px;height:88px;font-size:36px;cursor:default}
 .pf-pic-row{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
 .h-av{width:22px;height:22px;border-radius:50%;object-fit:cover;margin:-4px 6px -4px -4px;vertical-align:middle}
+
+/* ---- listing: next / previous and more like this */
+.ph .wrap{position:relative}
+.pnav{display:flex;align-items:stretch;gap:6px;margin:0 0 16px}
+@media (min-width:900px){.pnav{position:absolute;right:24px;top:36px;margin:0;max-width:520px}}
+.pnav a{color:#fff;text-decoration:none;border:1px solid var(--line-d);border-radius:14px;display:flex;align-items:center;gap:10px;padding:8px 14px;transition:background .2s,border-color .2s}
+.pnav a:hover{background:var(--navy2);border-color:var(--fountain)}
+.pnav-b>span[aria-hidden]{font-size:28px;line-height:1;color:var(--orange)}
+.pnav-t{display:flex;flex-direction:column;font-weight:600;font-size:14px;line-height:1.25;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pnav-t small,.pnav-c small{font-weight:500;font-size:11px;color:var(--od2);text-transform:uppercase;letter-spacing:.06em}
+.pnav-n{text-align:right}
+.pnav-n .pnav-t{align-items:flex-end}
+.pnav-c{flex-direction:column;justify-content:center;gap:0!important;font-weight:600;font-size:14px;text-align:center}
+.pnav-c small{text-transform:none;letter-spacing:0;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media (max-width:640px){.pnav-t{max-width:90px}.pnav-c small{display:none}.pnav a{padding:8px 10px}}
+.pmore h2{margin:0 0 10px}
+.pmore-l{list-style:none;margin:0;padding:0;max-height:420px;overflow:auto;display:flex;flex-direction:column;gap:2px}
+.pmore-l a{display:flex;flex-direction:column;padding:8px 10px;border-radius:10px;text-decoration:none;color:var(--ink)}
+.pmore-l a:hover{background:var(--page)}
+.pmore-l b{font-weight:600;font-size:15px}
+.pmore-l span{font-size:13px;color:var(--mu)}
+.pmore-l i.on{font-style:normal;color:var(--teal-d);font-weight:600}
+.pmore-l li[aria-current] a{background:var(--soft);box-shadow:inset 3px 0 0 var(--orange)}
+.pmore-back{display:inline-block;margin-top:10px;font-size:14px}
